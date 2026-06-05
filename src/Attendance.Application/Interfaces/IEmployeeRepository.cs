@@ -32,6 +32,19 @@ public interface IEmployeeRepository
     Task<IReadOnlyList<Employee>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Retrieves a single page of employees ordered by full name ascending, plus the total count.
+    /// Used for paginated admin listing.
+    /// </summary>
+    /// <param name="pageNumber">1-based page index.</param>
+    /// <param name="pageSize">Number of records per page.</param>
+    /// <param name="cancellationToken">Token to cancel the database query.</param>
+    /// <returns>A tuple of the page items and total employee count.</returns>
+    Task<(IReadOnlyList<Employee> Employees, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Persists a new employee entity and returns it with its generated primary key populated.
     /// </summary>
     /// <param name="employee">The employee entity to insert.</param>

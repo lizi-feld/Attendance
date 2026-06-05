@@ -62,6 +62,30 @@ public sealed class EmployeeRepository : IEmployeeRepository
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Issues two queries against the same ordered set: one <c>COUNT</c> and one page slice.
+    /// Both are index-friendly since they use <c>FullName</c> ordering.
+    /// </remarks>
+    public async Task<(IReadOnlyList<Employee> Employees, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var baseQuery = _context.Employees
+            .AsNoTracking()
+            .OrderBy(e => e.FullName);
+
+        var totalCount = await baseQuery.CountAsync(cancellationToken);
+
+        var employees = await baseQuery
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (employees, totalCount);
+    }
+
+    /// <inheritdoc />
     public async Task<Employee> AddAsync(Employee employee, CancellationToken cancellationToken = default)
     {
         await _context.Employees.AddAsync(employee, cancellationToken);

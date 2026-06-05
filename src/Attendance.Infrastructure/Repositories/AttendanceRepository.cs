@@ -108,13 +108,58 @@ public sealed class AttendanceRepository : IAttendanceRepository
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<AttendanceRecord>> GetByDateRangeAsync(
+        int employeeId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.AttendanceRecords
+            .AsNoTracking()
+            .Include(a => a.Employee)
+            .Where(a => a.EmployeeId == employeeId
+                     && a.ClockInTime >= from
+                     && a.ClockInTime < to)
+            .OrderByDescending(a => a.ClockInTime)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     /// <remarks>
-    /// Attaches and marks the entity as modified regardless of tracking state.
+    /// Issues two queries: one for the page slice (Skip/Take) and one for the total count,
+    /// both against the same filtered set. EF Core translates both to efficient SQL.
+    /// </remarks>
+    public async Task<(IReadOnlyList<AttendanceRecord> Records, int TotalCount)> GetPagedByEmployeeIdAsync(
+        int employeeId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var baseQuery = _context.AttendanceRecords
+            .AsNoTracking()
+            .Where(a => a.EmployeeId == employeeId);
+
+        var totalCount = await baseQuery.CountAsync(cancellationToken);
+
+        var records = await baseQuery
+            .Include(a => a.Employee)
+            .OrderByDescending(a => a.ClockInTime)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (records, totalCount);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Uses <c>Entry().State = Modified</c> rather than <c>Update()</c> to avoid
+    /// accidentally cascading a state change to the <see cref="Employee"/> navigation property.
     /// Caller is responsible for invoking domain methods (e.g. <c>ClockOut</c>) before calling this.
     /// </remarks>
     public async Task UpdateAsync(AttendanceRecord record, CancellationToken cancellationToken = default)
     {
-        _context.AttendanceRecords.Update(record);
+        _context.Entry(record).State = EntityState.Modified;
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

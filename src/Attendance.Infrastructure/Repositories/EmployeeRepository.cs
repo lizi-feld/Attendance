@@ -75,9 +75,13 @@ public sealed class EmployeeRepository : IEmployeeRepository
     /// which handles the common pattern of loading with <c>AsNoTracking</c>
     /// and then mutating via a domain method before calling this.
     /// </remarks>
+    /// <remarks>
+    /// Uses <c>Entry().State = Modified</c> rather than <c>Update()</c> to avoid
+    /// accidentally cascading a state change to the <see cref="Employee.AttendanceRecords"/> collection.
+    /// </remarks>
     public async Task UpdateAsync(Employee employee, CancellationToken cancellationToken = default)
     {
-        _context.Employees.Update(employee);
+        _context.Entry(employee).State = EntityState.Modified;
         await _context.SaveChangesAsync(cancellationToken);
     }
 

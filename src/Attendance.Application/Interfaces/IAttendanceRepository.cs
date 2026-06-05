@@ -52,6 +52,39 @@ public interface IAttendanceRepository
     Task<IReadOnlyList<AttendanceRecord>> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Retrieves all attendance records for an employee whose clock-in falls within a half-open
+    /// date/time range <c>[from, to)</c>. Both bounds are in Europe/Zurich time.
+    /// Used for weekly and monthly hour calculations.
+    /// </summary>
+    /// <param name="employeeId">The employee's primary key.</param>
+    /// <param name="from">Inclusive lower bound (Europe/Zurich time).</param>
+    /// <param name="to">Exclusive upper bound (Europe/Zurich time).</param>
+    /// <param name="cancellationToken">Token to cancel the database query.</param>
+    /// <returns>A read-only list of <see cref="AttendanceRecord"/> entries in the range.</returns>
+    Task<IReadOnlyList<AttendanceRecord>> GetByDateRangeAsync(
+        int employeeId,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves a single page of attendance records for an employee and the total record count,
+    /// ordered by clock-in time descending. Used for paginated history endpoints.
+    /// </summary>
+    /// <param name="employeeId">The employee's primary key.</param>
+    /// <param name="pageNumber">1-based page index.</param>
+    /// <param name="pageSize">Number of records per page.</param>
+    /// <param name="cancellationToken">Token to cancel the database query.</param>
+    /// <returns>
+    /// A tuple of the page items and the total count across all pages.
+    /// </returns>
+    Task<(IReadOnlyList<AttendanceRecord> Records, int TotalCount)> GetPagedByEmployeeIdAsync(
+        int employeeId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Persists a new attendance record and returns it with its generated primary key populated.
     /// </summary>
     /// <param name="record">The attendance record to insert.</param>

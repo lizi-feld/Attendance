@@ -120,6 +120,7 @@ public static class InfrastructureServiceExtensions
             resilience.Retry.Delay = TimeSpan.FromMilliseconds(500);
             resilience.Retry.ShouldHandle = new PredicateBuilder<HttpResponseMessage>()
                 .Handle<HttpRequestException>()
+                .Handle<Polly.Timeout.TimeoutRejectedException>()
                 .HandleResult(r =>
                     (int)r.StatusCode >= 500 ||
                     r.StatusCode == System.Net.HttpStatusCode.RequestTimeout);

@@ -52,17 +52,17 @@ public sealed class GlobalExceptionHandlingMiddleware
 
         var (statusCode, title) = exception switch
         {
-            ValidationException          => (StatusCodes.Status400BadRequest,            "Validation Failed"),
-            DomainException              => (StatusCodes.Status400BadRequest,            "Business Rule Violation"),
-            InvalidCredentialsException  => (StatusCodes.Status401Unauthorized,          "Invalid Credentials"),
-            AuthenticationException      => (StatusCodes.Status401Unauthorized,          "Authentication Failed"),
-            UnauthorizedAccessException  => (StatusCodes.Status403Forbidden,             "Access Denied"),
-            EmployeeNotFoundException    => (StatusCodes.Status404NotFound,              "Employee Not Found"),
-            ActiveShiftNotFoundException => (StatusCodes.Status409Conflict,              "No Active Shift"),
-            ActiveShiftAlreadyExistsException
-                                         => (StatusCodes.Status409Conflict,             "Shift Already Active"),
-            TimeProviderException        => (StatusCodes.Status500InternalServerError,   "Time Service Unavailable"),
-            _                            => (StatusCodes.Status500InternalServerError,   "An unexpected error occurred")
+            ValidationException               => (StatusCodes.Status400BadRequest,            "Validation Failed"),
+            DomainException                   => (StatusCodes.Status400BadRequest,            "Business Rule Violation"),
+            InvalidCredentialsException       => (StatusCodes.Status401Unauthorized,          "Invalid Credentials"),
+            AuthenticationException           => (StatusCodes.Status401Unauthorized,          "Authentication Failed"),
+            UnauthorizedAccessException       => (StatusCodes.Status403Forbidden,             "Access Denied"),
+            EmployeeNotFoundException         => (StatusCodes.Status404NotFound,              "Employee Not Found"),
+            UsernameAlreadyExistsException    => (StatusCodes.Status409Conflict,              "Username Already Taken"),
+            ActiveShiftNotFoundException      => (StatusCodes.Status409Conflict,              "No Active Shift"),
+            ActiveShiftAlreadyExistsException => (StatusCodes.Status409Conflict,              "Shift Already Active"),
+            TimeProviderException             => (StatusCodes.Status500InternalServerError,   "Time Service Unavailable"),
+            _                                 => (StatusCodes.Status500InternalServerError,   "An unexpected error occurred")
         };
 
         if (statusCode >= StatusCodes.Status500InternalServerError)

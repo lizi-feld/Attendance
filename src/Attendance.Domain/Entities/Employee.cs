@@ -88,6 +88,34 @@ public sealed class Employee
     }
 
     /// <summary>
+    /// Replaces the employee's display name.
+    /// </summary>
+    /// <param name="newFullName">New display name (max 200 chars).</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="newFullName"/> is null or whitespace.</exception>
+    /// <exception cref="DomainException">Thrown when the name exceeds 200 characters.</exception>
+    public void UpdateFullName(string newFullName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newFullName, nameof(newFullName));
+        if (newFullName.Length > 200)
+            throw new DomainException("Full name cannot exceed 200 characters.");
+        FullName = newFullName.Trim();
+    }
+
+    /// <summary>
+    /// Replaces the employee's login username (stored lowercase).
+    /// </summary>
+    /// <param name="newUsername">New username (max 100 chars). Uniqueness must be enforced by the caller.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="newUsername"/> is null or whitespace.</exception>
+    /// <exception cref="DomainException">Thrown when the username exceeds 100 characters.</exception>
+    public void UpdateUsername(string newUsername)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newUsername, nameof(newUsername));
+        if (newUsername.Length > 100)
+            throw new DomainException("Username cannot exceed 100 characters.");
+        Username = newUsername.Trim().ToLowerInvariant();
+    }
+
+    /// <summary>
     /// Elevates the employee's role to <see cref="Role.Admin"/>.
     /// </summary>
     /// <exception cref="DomainException">Thrown when the employee is already an administrator.</exception>

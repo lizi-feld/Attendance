@@ -1,25 +1,92 @@
+using Attendance.Application.Commands;
 using Attendance.Application.DTOs;
 using Attendance.Application.Exceptions;
 using Attendance.Application.Interfaces;
 using Attendance.Domain.Entities;
+using FluentValidation;
 
 namespace Attendance.Infrastructure.Services;
 
 /// <summary>
-/// Implements <see cref="IEmployeeService"/> by projecting <see cref="Employee"/> domain entities
-/// into read-only DTOs for the admin API surface.
+/// Implements <see cref="IEmployeeService"/>: employee creation, update, and read projections.
+/// Domain entities are never exposed beyond this class — all public methods return DTOs.
 /// </summary>
 public sealed class EmployeeService : IEmployeeService
 {
     private readonly IEmployeeRepository _employeeRepository;
+    private readonly IPasswordHashingService _passwordHashingService;
+    private readonly ITimeProvider _timeProvider;
+    private readonly IValidator<CreateEmployeeCommand> _createValidator;
+    private readonly IValidator<UpdateEmployeeCommand> _updateValidator;
 
     /// <summary>
     /// Initializes a new instance of <see cref="EmployeeService"/>.
     /// </summary>
-    /// <param name="employeeRepository">Data access abstraction for employee records.</param>
-    public EmployeeService(IEmployeeRepository employeeRepository)
+    public EmployeeService(
+        IEmployeeRepository employeeRepository,
+        IPasswordHashingService passwordHashingService,
+        ITimeProvider timeProvider,
+        IValidator<CreateEmployeeCommand> createValidator,
+        IValidator<UpdateEmployeeCommand> updateValidator)
     {
         _employeeRepository = employeeRepository;
+        _passwordHashingService = passwordHashingService;
+        _timeProvider = timeProvider;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="UsernameAlreadyExistsException">Username is already taken.</exception>
+    public async Task<EmployeeDto> CreateAsync(
+        CreateEmployeeCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        await _createValidator.ValidateAndThrowAsync(command, cancellationToken);
+
+        var normalizedUsername = command.Username.Trim().ToLowerInvariant();
+        if (await _employeeRepository.ExistsAsync(normalizedUsername, cancellationToken))
+            throw new UsernameAlreadyExistsException(command.Username);
+
+        var now = await _timeProvider.GetCurrentTimeAsync(cancellationToken);
+        var passwordHash = _passwordHashingService.HashPassword(command.Password);
+        var employee = Employee.Create(normalizedUsername, passwordHash, command.FullName, command.Role, now);
+        var created = await _employeeRepository.AddAsync(employee, cancellationToken);
+
+        return MapToDto(created);
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="EmployeeNotFoundException">Employee ID not found.</exception>
+    /// <exception cref="UsernameAlreadyExistsException">Requested new username is already taken.</exception>
+    public async Task<EmployeeDto> UpdateAsync(
+        UpdateEmployeeCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        await _updateValidator.ValidateAndThrowAsync(command, cancellationToken);
+
+        var employee = await _employeeRepository.GetByIdAsync(command.Id, cancellationToken)
+            ?? throw new EmployeeNotFoundException(command.Id);
+
+        if (command.FullName is not null)
+            employee.UpdateFullName(command.FullName);
+
+        if (command.Username is not null)
+        {
+            var normalizedUsername = command.Username.Trim().ToLowerInvariant();
+            if (normalizedUsername != employee.Username &&
+                await _employeeRepository.ExistsAsync(normalizedUsername, cancellationToken))
+                throw new UsernameAlreadyExistsException(command.Username);
+
+            employee.UpdateUsername(command.Username);
+        }
+
+        if (command.Password is not null)
+            employee.UpdatePasswordHash(_passwordHashingService.HashPassword(command.Password));
+
+        await _employeeRepository.UpdateAsync(employee, cancellationToken);
+
+        return MapToDto(employee);
     }
 
     /// <inheritdoc />

@@ -39,6 +39,8 @@ public sealed class DatabaseSeeder
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         await SeedAdminUserAsync(cancellationToken);
+        await SeedUserAsync(cancellationToken);
+
     }
 
     private async Task SeedAdminUserAsync(CancellationToken cancellationToken)
@@ -84,5 +86,50 @@ public sealed class DatabaseSeeder
         _logger.LogInformation(
             "Admin user seeded. Username={Username} FullName={FullName} Role={Role} CreatedAt={CreatedAt}",
             admin.Username, admin.FullName, admin.Role, admin.CreatedAt);
+    }
+
+    private async Task SeedUserAsync(CancellationToken cancellationToken)
+    {
+        const string username = "user";
+
+        var exists = await _context.Employees
+            .AnyAsync(e => e.Username == username, cancellationToken);
+
+        if (exists)
+        {
+            _logger.LogDebug("user already exists. Skipping seed.");
+            return;
+        }
+
+        // Attempt to use the external time provider for the audit timestamp.
+        // Fall back to UTC if the provider is unavailable during initial startup.
+        DateTime now;
+        try
+        {
+            now = await _timeProvider.GetCurrentTimeAsync(cancellationToken);
+        }
+        catch (TimeProviderException ex)
+        {
+            _logger.LogWarning(ex,
+                "External time provider unavailable during database seed. " +
+                "Using UTC as fallback for the admin account CreatedAt timestamp.");
+            now = DateTime.UtcNow;
+        }
+
+        var passwordHash = _passwordHashingService.HashPassword("user123!");
+
+        var user = Employee.Create(
+            username: username,
+            passwordHash: passwordHash,
+            fullName: "lizi feld",
+            role: Role.Employee,
+            createdAt: now);
+
+        await _context.Employees.AddAsync(user, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "user user seeded. Username={Username} FullName={FullName} Role={Role} CreatedAt={CreatedAt}",
+            user.Username, user.FullName, user.Role, user.CreatedAt);
     }
 }

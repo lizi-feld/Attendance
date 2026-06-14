@@ -142,4 +142,40 @@ public interface IAttendanceService
     Task<AttendanceRecordDto> AdminManualUpdateAsync(
         DTOs.ManualTimeUpdateRequestDto request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a new historical attendance record for the specified employee
+    /// with an explicit clock-in, clock-out, and mandatory audit note.
+    /// Used by employees to back-fill a missed shift for themselves.
+    /// </summary>
+    /// <param name="targetEmployeeId">The employee for whom the record will be created.</param>
+    /// <param name="request">Date, times, and reason note for the new record.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>The newly created <see cref="AttendanceRecordDto"/>.</returns>
+    /// <exception cref="Exceptions.EmployeeNotFoundException">No employee with <paramref name="targetEmployeeId"/> exists.</exception>
+    /// <exception cref="FluentValidation.ValidationException">
+    /// Thrown when <paramref name="request"/> is invalid (e.g. missing note, clock-out before clock-in).
+    /// </exception>
+    Task<AttendanceRecordDto> ManualAddShiftAsync(
+        int targetEmployeeId,
+        DTOs.ManualAddShiftRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Admin-only: creates a new historical attendance record for any employee.
+    /// The target employee is taken from <see cref="DTOs.ManualAddShiftRequestDto.EmployeeId"/>
+    /// when provided; otherwise <paramref name="fallbackEmployeeId"/> (the acting admin's ID) is used.
+    /// </summary>
+    /// <param name="fallbackEmployeeId">Admin's own ID, used when the DTO omits <c>EmployeeId</c>.</param>
+    /// <param name="request">Date, times, reason note, and optional target employee ID.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>The newly created <see cref="AttendanceRecordDto"/>.</returns>
+    /// <exception cref="Exceptions.EmployeeNotFoundException">Resolved target employee does not exist.</exception>
+    /// <exception cref="FluentValidation.ValidationException">
+    /// Thrown when <paramref name="request"/> is invalid (e.g. missing note, clock-out before clock-in).
+    /// </exception>
+    Task<AttendanceRecordDto> AdminManualAddShiftAsync(
+        int fallbackEmployeeId,
+        DTOs.ManualAddShiftRequestDto request,
+        CancellationToken cancellationToken = default);
 }

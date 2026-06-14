@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using Attendance.Application.DTOs;
+using Attendance.Application.Exceptions;
 using Attendance.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -161,5 +163,60 @@ public sealed class AdminController : ControllerBase
             result.Id, result.EmployeeId);
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Creates a new historical attendance record for the specified employee (or the acting admin
+    /// if <see cref="ManualAddShiftRequestDto.EmployeeId"/> is omitted).
+    /// A mandatory reason note must be provided for the audit trail.
+    /// </summary>
+    /// <param name="request">Date, clock-in/out times, reason note, and optional target employee ID.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <returns>The newly created attendance record.</returns>
+    [HttpPost("attendance/manual-add")]
+    [Consumes("application/json")]
+    [SwaggerOperation(
+        Summary = "Admin — add manual shift",
+        Description = "Admin-only. Creates a new completed attendance record for any employee. " +
+                      "Note is REQUIRED. If EmployeeId is omitted, the acting admin's own ID is used.")]
+    [SwaggerResponse(StatusCodes.Status201Created,        "Record created successfully.",      typeof(AttendanceRecordDto))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest,     "Validation failed (e.g. missing note, clock-out before clock-in).", typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized,   "Not authenticated.",               typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status403Forbidden,      "Admin role required.",             typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status404NotFound,       "Target employee not found.",       typeof(ProblemDetails))]
+    [ProducesResponseType(typeof(AttendanceRecordDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AdminManualAddShift(
+        [FromBody] ManualAddShiftRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var adminId = GetCurrentUserId();
+        var result  = await _attendanceService.AdminManualAddShiftAsync(adminId, request, cancellationToken);
+
+        _logger.LogInformation(
+            "POST /api/admin/attendance/manual-add succeeded. TargetEmployeeId={TargetEmployeeId} RecordId={RecordId}",
+            result.EmployeeId, result.Id);
+
+        return CreatedAtAction(nameof(GetEmployeeById), new { id = result.EmployeeId }, result);
+    }
+
+    // ── Private helpers ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Extracts and parses the admin's ID from the <c>sub</c> JWT claim.
+    /// </summary>
+    /// <exception cref="AuthenticationException">Claim is missing or not a valid integer.</exception>
+    private int GetCurrentUserId()
+    {
+        var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (value is null || !int.TryParse(value, out var userId))
+            throw new AuthenticationException(
+                "The authenticated token does not contain a valid user identifier.");
+
+        return userId;
     }
 }

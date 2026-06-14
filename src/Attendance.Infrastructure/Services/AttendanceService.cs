@@ -28,6 +28,7 @@ public sealed class AttendanceService : IAttendanceService
     private readonly IEmployeeRepository _employeeRepository;
     private readonly ITimeProvider _timeProvider;
     private readonly IValidator<ManualTimeUpdateRequestDto> _manualUpdateValidator;
+    private readonly IValidator<ManualAddShiftRequestDto> _manualAddShiftValidator;
     private readonly ILogger<AttendanceService> _logger;
 
     /// <summary>
@@ -38,12 +39,14 @@ public sealed class AttendanceService : IAttendanceService
         IEmployeeRepository employeeRepository,
         ITimeProvider timeProvider,
         IValidator<ManualTimeUpdateRequestDto> manualUpdateValidator,
+        IValidator<ManualAddShiftRequestDto> manualAddShiftValidator,
         ILogger<AttendanceService> logger)
     {
         _attendanceRepository = attendanceRepository;
         _employeeRepository = employeeRepository;
         _timeProvider = timeProvider;
         _manualUpdateValidator = manualUpdateValidator;
+        _manualAddShiftValidator = manualAddShiftValidator;
         _logger = logger;
     }
 
@@ -266,6 +269,60 @@ public sealed class AttendanceService : IAttendanceService
             record.Id, record.EmployeeId, record.ClockInTime, record.ClockOutTime);
 
         return MapToDto(record);
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="EmployeeNotFoundException">Employee ID not found.</exception>
+    public async Task<AttendanceRecordDto> ManualAddShiftAsync(
+        int targetEmployeeId,
+        ManualAddShiftRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        await _manualAddShiftValidator.ValidateAndThrowAsync(request, cancellationToken);
+
+        _ = await _employeeRepository.GetByIdAsync(targetEmployeeId, cancellationToken)
+            ?? throw new EmployeeNotFoundException(targetEmployeeId);
+
+        var now       = await _timeProvider.GetCurrentTimeAsync(cancellationToken);
+        var clockIn   = request.Date.ToDateTime(request.ClockInTime);
+        var clockOut  = request.Date.ToDateTime(request.ClockOutTime);
+
+        var record    = AttendanceRecord.CreateManual(targetEmployeeId, clockIn, clockOut, request.Note!, now);
+        var persisted = await _attendanceRepository.AddAsync(record, cancellationToken);
+
+        _logger.LogInformation(
+            "Manual shift added. EmployeeId={EmployeeId} RecordId={RecordId} Date={Date} ClockIn={ClockIn} ClockOut={ClockOut}",
+            targetEmployeeId, persisted.Id, request.Date, clockIn, clockOut);
+
+        return MapToDto(persisted);
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="EmployeeNotFoundException">Resolved target employee does not exist.</exception>
+    public async Task<AttendanceRecordDto> AdminManualAddShiftAsync(
+        int fallbackEmployeeId,
+        ManualAddShiftRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        await _manualAddShiftValidator.ValidateAndThrowAsync(request, cancellationToken);
+
+        var targetEmployeeId = request.EmployeeId ?? fallbackEmployeeId;
+
+        _ = await _employeeRepository.GetByIdAsync(targetEmployeeId, cancellationToken)
+            ?? throw new EmployeeNotFoundException(targetEmployeeId);
+
+        var now       = await _timeProvider.GetCurrentTimeAsync(cancellationToken);
+        var clockIn   = request.Date.ToDateTime(request.ClockInTime);
+        var clockOut  = request.Date.ToDateTime(request.ClockOutTime);
+
+        var record    = AttendanceRecord.CreateManual(targetEmployeeId, clockIn, clockOut, request.Note!, now);
+        var persisted = await _attendanceRepository.AddAsync(record, cancellationToken);
+
+        _logger.LogInformation(
+            "Admin manual shift added. TargetEmployeeId={TargetEmployeeId} RecordId={RecordId} Date={Date} ClockIn={ClockIn} ClockOut={ClockOut}",
+            targetEmployeeId, persisted.Id, request.Date, clockIn, clockOut);
+
+        return MapToDto(persisted);
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────

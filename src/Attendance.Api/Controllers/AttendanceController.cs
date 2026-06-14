@@ -220,6 +220,40 @@ public sealed class AttendanceController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Creates a new historical attendance record for the authenticated employee.
+    /// Use this to back-fill a missed or unrecorded past shift.
+    /// A mandatory reason note must be provided for the audit trail.
+    /// </summary>
+    /// <param name="request">Date, clock-in time, clock-out time, and reason note for the new record.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <returns>The newly created attendance record.</returns>
+    [HttpPost("manual-add")]
+    [Consumes("application/json")]
+    [SwaggerOperation(
+        Summary = "Add manual shift",
+        Description = "Creates a new completed attendance record for a past shift. " +
+                      "The Note field is REQUIRED. The record is created for the authenticated employee.")]
+    [SwaggerResponse(StatusCodes.Status201Created,        "Record created successfully.",      typeof(AttendanceRecordDto))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest,     "Validation failed (e.g. missing note, clock-out before clock-in).", typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized,   "Not authenticated.",               typeof(ProblemDetails))]
+    [ProducesResponseType(typeof(AttendanceRecordDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ManualAddShift(
+        [FromBody] ManualAddShiftRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var employeeId = GetCurrentUserId();
+        var result = await _attendanceService.ManualAddShiftAsync(employeeId, request, cancellationToken);
+
+        _logger.LogInformation(
+            "POST /api/attendance/manual-add succeeded. EmployeeId={EmployeeId} RecordId={RecordId}",
+            employeeId, result.Id);
+
+        return CreatedAtAction(nameof(GetHistory), result);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     /// <summary>

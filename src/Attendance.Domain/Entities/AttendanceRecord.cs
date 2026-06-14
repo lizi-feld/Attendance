@@ -76,6 +76,43 @@ public sealed class AttendanceRecord
     }
 
     /// <summary>
+    /// Factory method that creates a fully completed manual attendance record (clock-in AND clock-out
+    /// already known) for historical back-filling.
+    /// </summary>
+    /// <param name="employeeId">The ID of the employee the record belongs to.</param>
+    /// <param name="clockInTime">Clock-in timestamp supplied by the actor.</param>
+    /// <param name="clockOutTime">Clock-out timestamp; must be after <paramref name="clockInTime"/>.</param>
+    /// <param name="note">Mandatory audit reason; must not be empty.</param>
+    /// <param name="createdAt">UTC wall-clock timestamp for database auditing.</param>
+    /// <returns>A valid, unsaved <see cref="AttendanceRecord"/> with both timestamps set.</returns>
+    /// <exception cref="DomainException">
+    /// Thrown when <paramref name="employeeId"/> is not positive, or
+    /// <paramref name="clockOutTime"/> is not after <paramref name="clockInTime"/>.
+    /// </exception>
+    public static AttendanceRecord CreateManual(
+        int employeeId,
+        DateTime clockInTime,
+        DateTime clockOutTime,
+        string note,
+        DateTime createdAt)
+    {
+        if (employeeId <= 0)
+            throw new DomainException("Employee ID must be a positive integer.");
+
+        if (clockOutTime <= clockInTime)
+            throw new DomainException("Clock-out time must be after clock-in time.");
+
+        return new AttendanceRecord
+        {
+            EmployeeId   = employeeId,
+            ClockInTime  = clockInTime,
+            ClockOutTime = clockOutTime,
+            Note         = note,
+            CreatedAt    = createdAt
+        };
+    }
+
+    /// <summary>
     /// Retroactively adjusts the clock-in and clock-out times and records the mandatory reason note.
     /// </summary>
     /// <param name="newClockInTime">Replacement clock-in timestamp.</param>

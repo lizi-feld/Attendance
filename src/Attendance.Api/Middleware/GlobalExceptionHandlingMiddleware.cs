@@ -58,6 +58,7 @@ public sealed class GlobalExceptionHandlingMiddleware
             AuthenticationException           => (StatusCodes.Status401Unauthorized,          "Authentication Failed"),
             UnauthorizedAccessException       => (StatusCodes.Status403Forbidden,             "Access Denied"),
             EmployeeNotFoundException         => (StatusCodes.Status404NotFound,              "Employee Not Found"),
+            AttendanceRecordNotFoundException => (StatusCodes.Status404NotFound,              "Attendance Record Not Found"),
             UsernameAlreadyExistsException    => (StatusCodes.Status409Conflict,              "Username Already Taken"),
             ActiveShiftNotFoundException      => (StatusCodes.Status409Conflict,              "No Active Shift"),
             ActiveShiftAlreadyExistsException => (StatusCodes.Status409Conflict,              "Shift Already Active"),

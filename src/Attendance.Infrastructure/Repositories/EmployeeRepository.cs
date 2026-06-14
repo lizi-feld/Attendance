@@ -65,6 +65,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
     /// <remarks>
     /// Issues two queries against the same ordered set: one <c>COUNT</c> and one page slice.
     /// Both are index-friendly since they use <c>FullName</c> ordering.
+    /// Eagerly loads <see cref="Employee.AttendanceRecords"/> for the UI to display recent clock-in times.
     /// </remarks>
     public async Task<(IReadOnlyList<Employee> Employees, int TotalCount)> GetPagedAsync(
         int pageNumber,
@@ -78,6 +79,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
         var totalCount = await baseQuery.CountAsync(cancellationToken);
 
         var employees = await baseQuery
+            .Include(e => e.AttendanceRecords)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);

@@ -38,6 +38,12 @@ public sealed class AttendanceRecordConfiguration : IEntityTypeConfiguration<Att
             .IsRequired()
             .HasColumnType("datetime2");
 
+        // Nullable — only populated on manual/retroactive adjustments; empty for regular clock-in/out.
+        builder.Property(a => a.Note)
+            .IsRequired(false)
+            .HasMaxLength(500)
+            .HasColumnType("nvarchar(500)");
+
         // Computed properties — not mapped to columns.
         builder.Ignore(a => a.IsActive);
         builder.Ignore(a => a.Duration);

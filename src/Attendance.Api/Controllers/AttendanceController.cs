@@ -181,6 +181,45 @@ public sealed class AttendanceController : ControllerBase
         return Ok(WorkedHoursDto.FromTimeSpan(duration));
     }
 
+    /// <summary>
+    /// Retroactively adjusts an attendance record's clock-in and clock-out times.
+    /// A mandatory reason note must be provided — this rule only applies to manual updates,
+    /// not to regular clock-in/out operations.
+    /// Employees may only modify their own records.
+    /// </summary>
+    /// <param name="request">Update payload: record ID, new times, and reason note.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <returns>The updated attendance record.</returns>
+    [HttpPut("manual-update")]
+    [SwaggerOperation(
+        Summary = "Manual attendance update",
+        Description = "Retroactively adjusts clock-in/out times for an existing record. " +
+                      "The Note field is REQUIRED for this endpoint. " +
+                      "Employees may only update their own records.")]
+    [SwaggerResponse(StatusCodes.Status200OK,           "Record updated successfully.",      typeof(AttendanceRecordDto))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest,   "Validation failed (e.g. missing note, invalid time range).", typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Not authenticated.",               typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status403Forbidden,    "Attempting to modify another employee's record.", typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status404NotFound,     "Attendance record not found.",     typeof(ProblemDetails))]
+    [ProducesResponseType(typeof(AttendanceRecordDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ManualUpdate(
+        [FromBody] ManualTimeUpdateRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var employeeId = GetCurrentUserId();
+        var result = await _attendanceService.ManualUpdateAsync(employeeId, request, cancellationToken);
+
+        _logger.LogInformation(
+            "PUT /api/attendance/manual-update succeeded. EmployeeId={EmployeeId} RecordId={RecordId}",
+            employeeId, result.Id);
+
+        return Ok(result);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     /// <summary>

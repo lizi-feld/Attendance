@@ -125,4 +125,41 @@ public sealed class AdminController : ControllerBase
 
         return Ok(result);
     }
+
+    /// <summary>
+    /// Retroactively adjusts any employee's attendance record clock-in and clock-out times.
+    /// A mandatory reason note must be provided for the audit trail.
+    /// Admins may update records belonging to any employee.
+    /// </summary>
+    /// <param name="request">Update payload: record ID, new times, and reason note.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <returns>The updated attendance record.</returns>
+    [HttpPut("attendance/manual-update")]
+    [Consumes("application/json")]
+    [SwaggerOperation(
+        Summary = "Admin — manual attendance update",
+        Description = "Admin-only. Retroactively adjusts clock-in/out times for any employee's record. " +
+                      "Note is REQUIRED. No ownership restriction applies.")]
+    [SwaggerResponse(StatusCodes.Status200OK,           "Record updated successfully.",      typeof(AttendanceRecordDto))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest,   "Validation failed (e.g. missing note, invalid time range).", typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Not authenticated.",               typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status403Forbidden,    "Admin role required.",             typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status404NotFound,     "Attendance record not found.",     typeof(ProblemDetails))]
+    [ProducesResponseType(typeof(AttendanceRecordDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails),      StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AdminManualUpdate(
+        [FromBody] ManualTimeUpdateRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _attendanceService.AdminManualUpdateAsync(request, cancellationToken);
+
+        _logger.LogInformation(
+            "PUT /api/admin/attendance/manual-update succeeded. RecordId={RecordId} EmployeeId={EmployeeId}",
+            result.Id, result.EmployeeId);
+
+        return Ok(result);
+    }
 }

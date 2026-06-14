@@ -121,7 +121,13 @@ public sealed class EmployeeService : IEmployeeService
         Username = employee.Username,
         FullName = employee.FullName,
         Role = employee.Role.ToString(),
-        CreatedAt = employee.CreatedAt
+        CreatedAt = employee.CreatedAt,
+        AttendanceRecords = employee.AttendanceRecords?.Count > 0
+            ? employee.AttendanceRecords
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => MapRecordToDto(r, employee.FullName))
+                .ToList()
+            : null
     };
 
     private static EmployeeDetailsDto MapToDetailsDto(Employee employee) => new()
@@ -148,6 +154,7 @@ public sealed class EmployeeService : IEmployeeService
         ClockInTime = record.ClockInTime,
         ClockOutTime = record.ClockOutTime,
         Duration = record.Duration,
-        CreatedAt = record.CreatedAt
+        CreatedAt = record.CreatedAt,
+        Note = record.Note
     };
 }

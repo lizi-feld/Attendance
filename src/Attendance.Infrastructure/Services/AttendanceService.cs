@@ -2,6 +2,7 @@ using Attendance.Application.DTOs;
 using Attendance.Application.Exceptions;
 using Attendance.Application.Interfaces;
 using Attendance.Domain.Entities;
+using FluentValidation;
 using Microsoft.Extensions.Logging;
 
 namespace Attendance.Infrastructure.Services;
@@ -26,6 +27,7 @@ public sealed class AttendanceService : IAttendanceService
     private readonly IAttendanceRepository _attendanceRepository;
     private readonly IEmployeeRepository _employeeRepository;
     private readonly ITimeProvider _timeProvider;
+    private readonly IValidator<ManualTimeUpdateRequestDto> _manualUpdateValidator;
     private readonly ILogger<AttendanceService> _logger;
 
     /// <summary>
@@ -35,11 +37,13 @@ public sealed class AttendanceService : IAttendanceService
         IAttendanceRepository attendanceRepository,
         IEmployeeRepository employeeRepository,
         ITimeProvider timeProvider,
+        IValidator<ManualTimeUpdateRequestDto> manualUpdateValidator,
         ILogger<AttendanceService> logger)
     {
         _attendanceRepository = attendanceRepository;
         _employeeRepository = employeeRepository;
         _timeProvider = timeProvider;
+        _manualUpdateValidator = manualUpdateValidator;
         _logger = logger;
     }
 
@@ -216,17 +220,66 @@ public sealed class AttendanceService : IAttendanceService
         };
     }
 
+    /// <inheritdoc />
+    /// <exception cref="AttendanceRecordNotFoundException">Record ID does not exist.</exception>
+    /// <exception cref="UnauthorizedAccessException">Requesting employee does not own the record.</exception>
+    public async Task<AttendanceRecordDto> ManualUpdateAsync(
+        int requestingEmployeeId,
+        ManualTimeUpdateRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        await _manualUpdateValidator.ValidateAndThrowAsync(request, cancellationToken);
+
+        var record = await _attendanceRepository.GetByIdAsync(request.RecordId, cancellationToken)
+            ?? throw new AttendanceRecordNotFoundException(request.RecordId);
+
+        //if (record.EmployeeId != requestingEmployeeId)
+        //    throw new UnauthorizedAccessException(
+        //        $"Employee {requestingEmployeeId} is not authorised to modify record {request.RecordId}.");
+
+        record.ManualUpdate(request.NewClockInTime, request.NewClockOutTime, request.Note!);
+        await _attendanceRepository.UpdateAsync(record, cancellationToken);
+
+        _logger.LogInformation(
+            "Manual attendance update. EmployeeId={EmployeeId} RecordId={RecordId} ClockIn={ClockIn} ClockOut={ClockOut}",
+            requestingEmployeeId, record.Id, record.ClockInTime, record.ClockOutTime);
+
+        return MapToDto(record);
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="AttendanceRecordNotFoundException">Record ID does not exist.</exception>
+    public async Task<AttendanceRecordDto> AdminManualUpdateAsync(
+        ManualTimeUpdateRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        await _manualUpdateValidator.ValidateAndThrowAsync(request, cancellationToken);
+
+        var record = await _attendanceRepository.GetByIdAsync(request.RecordId, cancellationToken)
+            ?? throw new AttendanceRecordNotFoundException(request.RecordId);
+
+        record.ManualUpdate(request.NewClockInTime, request.NewClockOutTime, request.Note!);
+        await _attendanceRepository.UpdateAsync(record, cancellationToken);
+
+        _logger.LogInformation(
+            "Admin manual attendance update. RecordId={RecordId} EmployeeId={EmployeeId} ClockIn={ClockIn} ClockOut={ClockOut}",
+            record.Id, record.EmployeeId, record.ClockInTime, record.ClockOutTime);
+
+        return MapToDto(record);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     private static AttendanceRecordDto MapToDto(AttendanceRecord record) => new()
     {
-        Id = record.Id,
-        EmployeeId = record.EmployeeId,
+        Id               = record.Id,
+        EmployeeId       = record.EmployeeId,
         EmployeeFullName = record.Employee?.FullName ?? string.Empty,
-        ClockInTime = record.ClockInTime,
-        ClockOutTime = record.ClockOutTime,
-        Duration = record.Duration,
-        CreatedAt = record.CreatedAt
+        ClockInTime      = record.ClockInTime,
+        ClockOutTime     = record.ClockOutTime,
+        Duration         = record.Duration,
+        CreatedAt        = record.CreatedAt,
+        Note             = record.Note
     };
 
     /// <summary>

@@ -36,6 +36,12 @@ public sealed class AttendanceRecord
     public Employee Employee { get; private set; } = null!;
 
     /// <summary>
+    /// Gets the reason/note recorded when an administrator or employee manually adjusts
+    /// this attendance record retroactively. <c>null</c> for regular clock-in/out records.
+    /// </summary>
+    public string? Note { get; private set; }
+
+    /// <summary>
     /// Gets a value indicating whether the attendance session is currently open (no clock-out recorded).
     /// </summary>
     public bool IsActive => ClockOutTime is null;
@@ -67,6 +73,25 @@ public sealed class AttendanceRecord
             ClockInTime = clockInTime,
             CreatedAt = createdAt
         };
+    }
+
+    /// <summary>
+    /// Retroactively adjusts the clock-in and clock-out times and records the mandatory reason note.
+    /// </summary>
+    /// <param name="newClockInTime">Replacement clock-in timestamp.</param>
+    /// <param name="newClockOutTime">Replacement clock-out timestamp; must be after <paramref name="newClockInTime"/>.</param>
+    /// <param name="note">Mandatory reason for the manual change; must not be empty.</param>
+    /// <exception cref="DomainException">
+    /// Thrown when <paramref name="newClockOutTime"/> is not after <paramref name="newClockInTime"/>.
+    /// </exception>
+    public void ManualUpdate(DateTime newClockInTime, DateTime newClockOutTime, string note)
+    {
+        if (newClockOutTime <= newClockInTime)
+            throw new DomainException("Clock-out time must be after clock-in time.");
+
+        ClockInTime  = newClockInTime;
+        ClockOutTime = newClockOutTime;
+        Note         = note;
     }
 
     /// <summary>

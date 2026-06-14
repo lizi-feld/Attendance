@@ -2,7 +2,7 @@ namespace Attendance.Application.DTOs;
 
 /// <summary>
 /// Lightweight employee summary used in list endpoints and embedded in JWT responses.
-/// Does not include sensitive data or the full attendance history.
+/// Optionally includes recent attendance records for UI pagination and clock-in display.
 /// </summary>
 public sealed record EmployeeDto
 {
@@ -20,4 +20,7 @@ public sealed record EmployeeDto
 
     /// <summary>Gets the UTC timestamp when the account was created.</summary>
     public DateTime CreatedAt { get; init; }
+
+    /// <summary>Gets the employee's attendance records, ordered by creation date descending. Null if not included in query.</summary>
+    public List<AttendanceRecordDto>? AttendanceRecords { get; init; }
 }

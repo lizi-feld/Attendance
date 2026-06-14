@@ -35,4 +35,10 @@ public sealed record AttendanceRecordDto
 
     /// <summary>Gets the UTC timestamp when this record was inserted into the database.</summary>
     public DateTime CreatedAt { get; init; }
+
+    /// <summary>
+    /// Gets the reason note recorded for a manual/retroactive update,
+    /// or <c>null</c> for records created by regular clock-in/out.
+    /// </summary>
+    public string? Note { get; init; }
 }

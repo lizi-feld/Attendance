@@ -106,4 +106,40 @@ public interface IAttendanceService
     /// <param name="cancellationToken">Token to cancel the operation.</param>
     /// <returns>A <see cref="DashboardSummaryDto"/> snapshot of the current attendance state.</returns>
     Task<DashboardSummaryDto> GetDashboardSummaryAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retroactively adjusts the clock-in/out times of an existing attendance record
+    /// and stores the mandatory audit reason note.
+    /// </summary>
+    /// <param name="requestingEmployeeId">
+    /// The ID of the authenticated employee making the request.
+    /// Must match the record's owner — employees cannot modify other employees' records.
+    /// </param>
+    /// <param name="request">The update payload including the record ID, new times, and reason note.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>The updated <see cref="AttendanceRecordDto"/>.</returns>
+    /// <exception cref="Exceptions.AttendanceRecordNotFoundException">Record ID does not exist.</exception>
+    /// <exception cref="UnauthorizedAccessException">Requesting employee does not own the record.</exception>
+    /// <exception cref="FluentValidation.ValidationException">
+    /// Thrown when <paramref name="request"/> is invalid (e.g. missing note, invalid time range).
+    /// </exception>
+    Task<AttendanceRecordDto> ManualUpdateAsync(
+        int requestingEmployeeId,
+        DTOs.ManualTimeUpdateRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Admin-only: retroactively adjusts the clock-in/out times of any employee's attendance record
+    /// and stores the mandatory audit reason note. No ownership restriction is applied.
+    /// </summary>
+    /// <param name="request">The update payload including the record ID, new times, and reason note.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>The updated <see cref="AttendanceRecordDto"/>.</returns>
+    /// <exception cref="Exceptions.AttendanceRecordNotFoundException">Record ID does not exist.</exception>
+    /// <exception cref="FluentValidation.ValidationException">
+    /// Thrown when <paramref name="request"/> is invalid (e.g. missing note, invalid time range).
+    /// </exception>
+    Task<AttendanceRecordDto> AdminManualUpdateAsync(
+        DTOs.ManualTimeUpdateRequestDto request,
+        CancellationToken cancellationToken = default);
 }

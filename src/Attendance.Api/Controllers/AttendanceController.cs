@@ -114,6 +114,8 @@ public sealed class AttendanceController : ControllerBase
     /// </summary>
     /// <param name="pageNumber">1-based page number (default: 1).</param>
     /// <param name="pageSize">Records per page, max 100 (default: 20).</param>
+    /// <param name="year">Optional year filter for the history query.</param>
+    /// <param name="month">Optional month filter for the history query.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     /// <returns>Paginated list of attendance records with total count and page metadata.</returns>
     [HttpGet("history")]
@@ -129,11 +131,13 @@ public sealed class AttendanceController : ControllerBase
     public async Task<IActionResult> GetHistory(
         [FromQuery][Range(1, int.MaxValue)] int pageNumber = 1,
         [FromQuery][Range(1, 100)]          int pageSize   = 20,
+        [FromQuery] int? year = null,
+        [FromQuery][Range(1, 12)] int? month = null,
         CancellationToken cancellationToken = default)
     {
         var employeeId = GetCurrentUserId();
         var result = await _attendanceService.GetAttendanceHistoryAsync(
-            employeeId, pageNumber, pageSize, cancellationToken);
+            employeeId, pageNumber, pageSize, year, month, cancellationToken);
         return Ok(result);
     }
 

@@ -133,11 +133,26 @@ public sealed class AttendanceRepository : IAttendanceRepository
         int employeeId,
         int pageNumber,
         int pageSize,
+        int? year = null,
+        int? month = null,
         CancellationToken cancellationToken = default)
     {
         var baseQuery = _context.AttendanceRecords
             .AsNoTracking()
             .Where(a => a.EmployeeId == employeeId);
+
+        if (year.HasValue && month.HasValue)
+        {
+            var monthStart = new DateTime(year.Value, month.Value, 1);
+            var monthEnd = monthStart.AddMonths(1);
+            baseQuery = baseQuery.Where(a => a.ClockInTime >= monthStart && a.ClockInTime < monthEnd);
+        }
+        else if (year.HasValue)
+        {
+            var yearStart = new DateTime(year.Value, 1, 1);
+            var yearEnd = yearStart.AddYears(1);
+            baseQuery = baseQuery.Where(a => a.ClockInTime >= yearStart && a.ClockInTime < yearEnd);
+        }
 
         var totalCount = await baseQuery.CountAsync(cancellationToken);
 

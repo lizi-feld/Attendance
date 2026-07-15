@@ -136,13 +136,15 @@ public sealed class AttendanceService : IAttendanceService
         int employeeId,
         int pageNumber,
         int pageSize,
+        int? year = null,
+        int? month = null,
         CancellationToken cancellationToken = default)
     {
         _ = await _employeeRepository.GetByIdAsync(employeeId, cancellationToken)
             ?? throw new EmployeeNotFoundException(employeeId);
 
         var (records, totalCount) = await _attendanceRepository.GetPagedByEmployeeIdAsync(
-            employeeId, pageNumber, pageSize, cancellationToken);
+            employeeId, pageNumber, pageSize, year, month, cancellationToken);
 
         var items = records.Select(MapToDto).ToList();
 

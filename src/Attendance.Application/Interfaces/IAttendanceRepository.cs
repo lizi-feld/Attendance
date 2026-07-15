@@ -74,6 +74,8 @@ public interface IAttendanceRepository
     /// <param name="employeeId">The employee's primary key.</param>
     /// <param name="pageNumber">1-based page index.</param>
     /// <param name="pageSize">Number of records per page.</param>
+    /// <param name="year">Optional year filter for the history query.</param>
+    /// <param name="month">Optional month filter for the history query.</param>
     /// <param name="cancellationToken">Token to cancel the database query.</param>
     /// <returns>
     /// A tuple of the page items and the total count across all pages.
@@ -82,6 +84,8 @@ public interface IAttendanceRepository
         int employeeId,
         int pageNumber,
         int pageSize,
+        int? year = null,
+        int? month = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

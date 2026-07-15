@@ -68,6 +68,8 @@ public interface IAttendanceService
     /// <param name="employeeId">The ID of the employee.</param>
     /// <param name="pageNumber">The 1-based page number to retrieve.</param>
     /// <param name="pageSize">The number of records per page (max recommended: 100).</param>
+    /// <param name="year">Optional year filter for the history query.</param>
+    /// <param name="month">Optional month filter for the history query.</param>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
     /// <returns>A <see cref="PagedResult{T}"/> of <see cref="AttendanceRecordDto"/> entries.</returns>
     /// <exception cref="Exceptions.EmployeeNotFoundException">Thrown when no employee with the given ID exists.</exception>
@@ -75,6 +77,8 @@ public interface IAttendanceService
         int employeeId,
         int pageNumber,
         int pageSize,
+        int? year = null,
+        int? month = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

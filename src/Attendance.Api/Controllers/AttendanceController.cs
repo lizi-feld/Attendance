@@ -142,6 +142,36 @@ public sealed class AttendanceController : ControllerBase
     }
 
     /// <summary>
+    /// Returns a complete calendar view for the selected month, including every day and any matching attendance data.
+    /// </summary>
+    /// <param name="year">The calendar year.</param>
+    /// <param name="month">The calendar month.</param>
+    /// <param name="employeeId">Optional employee id to view; only allowed for Admin users. If not provided, returns the authenticated employee's calendar.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <returns>Full month calendar view with one row per day.</returns>
+    [HttpGet("history/calendar")]
+    [SwaggerOperation(
+        Summary = "Get month calendar history",
+        Description = "Returns one row per calendar day for the selected month, merged with any attendance data.")]
+    [SwaggerResponse(StatusCodes.Status200OK, "Calendar history retrieved successfully.", typeof(AttendanceHistoryMonthDto))]
+    [ProducesResponseType(typeof(AttendanceHistoryMonthDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetHistoryCalendar(
+        [FromQuery][Range(2000, 2100)] int year,
+        [FromQuery][Range(1, 12)] int month,
+        [FromQuery] int? employeeId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (employeeId.HasValue && !User.IsInRole("Admin"))
+        {
+            return Forbid();
+        }
+
+        var targetEmployeeId = employeeId ?? GetCurrentUserId();
+        var result = await _attendanceService.GetAttendanceMonthCalendarAsync(targetEmployeeId, year, month, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Calculates the total hours worked during the current ISO week (Monday–Sunday)
     /// for the authenticated employee.
     /// Active sessions contribute their elapsed time up to the current moment.

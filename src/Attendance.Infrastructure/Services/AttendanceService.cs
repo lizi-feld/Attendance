@@ -152,6 +152,120 @@ public sealed class AttendanceService : IAttendanceService
     }
 
     /// <inheritdoc />
+    public async Task<AttendanceHistoryMonthDto> GetAttendanceMonthCalendarAsync(
+        int employeeId,
+        int year,
+        int month,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await _employeeRepository.GetByIdAsync(employeeId, cancellationToken)
+            ?? throw new EmployeeNotFoundException(employeeId);
+
+        var monthStart = new DateTime(year, month, 1);
+        var monthEnd = monthStart.AddMonths(1);
+        var records = await _attendanceRepository.GetByDateRangeAsync(
+            employeeId, monthStart, monthEnd, cancellationToken);
+
+        // Group records by calendar day (DateOnly) and pick the latest record per day.
+        // This prevents ToDictionary from throwing when multiple records have the same calendar date.
+        var recordLookup = records
+            .GroupBy(r => DateOnly.FromDateTime(r.ClockInTime))
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.ClockInTime).First());
+
+        var firstDay = new DateOnly(year, month, 1);
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+        var today = DateOnly.FromDateTime(await _timeProvider.GetCurrentTimeAsync(cancellationToken));
+        var monthClosed = false;
+
+        static string FormatDuration(TimeSpan? duration) => duration is null ? "00:00" : duration.Value.ToString("hh\\:mm");
+        static string ToHebrewDayName(DayOfWeek dayOfWeek) => dayOfWeek switch
+        {
+            DayOfWeek.Sunday => "יום ראשון",
+            DayOfWeek.Monday => "יום שני",
+            DayOfWeek.Tuesday => "יום שלישי",
+            DayOfWeek.Wednesday => "יום רביעי",
+            DayOfWeek.Thursday => "יום חמישי",
+            DayOfWeek.Friday => "יום שישי",
+            _ => "שבת"
+        };
+
+        var days = new List<AttendanceHistoryDayDto>(daysInMonth);
+        for (var day = 1; day <= daysInMonth; day++)
+        {
+            var date = firstDay.AddDays(day - 1);
+            var record = recordLookup.TryGetValue(date, out var matchedRecord) ? matchedRecord : null;
+            var dayOfWeek = date.DayOfWeek.ToString();
+            var isWeekend = date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+            var isFutureDate = date > today;
+            var isDisabled = isWeekend || isFutureDate || monthClosed;
+            var isEditable = !isDisabled && !monthClosed;
+            var canClockIn = isEditable && record is null;
+            var canClockOut = isEditable && record is not null && record.ClockOutTime is null;
+            var status = record is null
+                ? (isWeekend ? "Weekend" : isFutureDate ? "Future" : "Empty")
+                : (record.ClockOutTime is null ? "Active" : "Completed");
+            var rowType = record is null
+                ? (isWeekend ? "Weekend" : isFutureDate ? "Future" : "Empty")
+                : "Attendance";
+            var hasDeficit = record is not null && record.Duration is not null && record.Duration.Value.TotalHours < 8;
+            var alertText = record is null
+                ? (isWeekend ? "אין דרישה לנוכחות בסופ" + "\"" + "ש" : isFutureDate ? "היום עדיין לא התרחש" : null)
+                : hasDeficit ? "פגיעה בשעות העבודה" : null;
+            var explanation = record is null
+                ? (isWeekend ? "יום סופי שבוע" : isFutureDate ? "יום עתידי" : "אין רשומה")
+                : (record.ClockOutTime is null ? "משמרת פעילה" : "משמרת הושלמה");
+
+            days.Add(new AttendanceHistoryDayDto
+            {
+                Date = date,
+                DayOfWeek = dayOfWeek,
+                DisplayDateLabel = date.ToString("dd/MM/yyyy"),
+                DayLabel = ToHebrewDayName(date.DayOfWeek),
+                DayTypeLabel = isWeekend ? "סופי שבוע" : "רגיל",
+                HasAttendanceRecord = record is not null,
+                IsWeekend = isWeekend,
+                IsFutureDate = isFutureDate,
+                IsDisabled = isDisabled,
+                IsEditable = isEditable,
+                IsMonthClosed = monthClosed,
+                CanClockIn = canClockIn,
+                CanClockOut = canClockOut,
+                Status = status,
+                ClockInTime = record?.ClockInTime,
+                ClockOutTime = record?.ClockOutTime,
+                TotalWorkedHours = record?.Duration is not null ? FormatDuration(record.Duration) : string.Empty,
+                RowType = rowType,
+                HasAlert = !string.IsNullOrWhiteSpace(alertText) || hasDeficit,
+                HasDeficit = hasDeficit,
+                AlertText = alertText,
+                DisplayBalance = record?.Duration is not null ? FormatDuration(record.Duration) : null,
+                Explanation = explanation
+            });
+        }
+
+        var totalWorked = records
+            .Where(r => r.Duration is not null)
+            .Select(r => r.Duration!.Value)
+            .Aggregate(TimeSpan.Zero, (sum, next) => sum + next);
+        var notesCount = records.Count(r => !string.IsNullOrWhiteSpace(r.Note));
+
+        return new AttendanceHistoryMonthDto
+        {
+            Year = year,
+            Month = month,
+            Summary = new AttendanceHistoryMonthSummaryDto
+            {
+                TotalWorkedHours = FormatDuration(totalWorked),
+                RegularHours = FormatDuration(totalWorked),
+                DeficitHours = "00:00",
+                BreakHours = "00:00",
+                NotesCount = notesCount
+            },
+            Days = days
+        };
+    }
+
+    /// <inheritdoc />
     /// <remarks>
     /// Week boundary: Monday 00:00:00 (inclusive) through the start of the following Monday (exclusive).
     /// Any active session's end time is treated as the current moment from <see cref="ITimeProvider"/>.

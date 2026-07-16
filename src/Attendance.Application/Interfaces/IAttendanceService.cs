@@ -82,6 +82,20 @@ public interface IAttendanceService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns a full calendar view for a selected month, including all days and any matching attendance data.
+    /// </summary>
+    /// <param name="employeeId">The ID of the employee.</param>
+    /// <param name="year">The target year.</param>
+    /// <param name="month">The target month.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>A month calendar with one row per calendar day.</returns>
+    Task<AttendanceHistoryMonthDto> GetAttendanceMonthCalendarAsync(
+        int employeeId,
+        int year,
+        int month,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Calculates the total worked hours for the current ISO week (Monday 00:00 – Sunday 23:59:59)
     /// using the external time provider to determine "today".
     /// Active sessions contribute their elapsed time up to the current moment.

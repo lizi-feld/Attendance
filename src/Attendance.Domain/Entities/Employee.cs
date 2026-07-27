@@ -26,6 +26,9 @@ public sealed class Employee
     /// <summary>Gets the employee's display name.</summary>
     public string FullName { get; private set; } = string.Empty;
 
+    /// <summary>Gets the employee's target daily work-hours quota.</summary>
+    public decimal DailyWorkHours { get; private set; }
+
     /// <summary>Gets the role assigned to this employee.</summary>
     public Role Role { get; private set; }
 
@@ -46,6 +49,7 @@ public sealed class Employee
     /// <param name="fullName">Display name (max 200 chars).</param>
     /// <param name="role">The access role to assign.</param>
     /// <param name="createdAt">Timestamp from the external time provider (Asia/Jerusalem).</param>
+    /// <param name="dailyWorkHours">Target daily work-hours quota for the employee.</param>
     /// <returns>A valid, unsaved <see cref="Employee"/> entity.</returns>
     /// <exception cref="ArgumentException">Thrown when any string argument is null or whitespace.</exception>
     /// <exception cref="DomainException">Thrown when a business constraint is violated.</exception>
@@ -54,7 +58,8 @@ public sealed class Employee
         string passwordHash,
         string fullName,
         Role role,
-        DateTime createdAt)
+        DateTime createdAt,
+        decimal dailyWorkHours)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(username, nameof(username));
         ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash, nameof(passwordHash));
@@ -66,11 +71,15 @@ public sealed class Employee
         if (fullName.Length > 200)
             throw new DomainException("Full name cannot exceed 200 characters.");
 
+        if (dailyWorkHours <= 0 || dailyWorkHours > 24)
+            throw new DomainException("Daily work hours must be greater than 0 and no more than 24.");
+
         return new Employee
         {
             Username = username.Trim().ToLowerInvariant(),
             PasswordHash = passwordHash,
             FullName = fullName.Trim(),
+            DailyWorkHours = dailyWorkHours,
             Role = role,
             CreatedAt = createdAt
         };
@@ -113,6 +122,18 @@ public sealed class Employee
         if (newUsername.Length > 100)
             throw new DomainException("Username cannot exceed 100 characters.");
         Username = newUsername.Trim().ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Elevates the employee's role to <see cref="Role.Admin"/>.
+    /// </summary>
+    /// <exception cref="DomainException">Thrown when the employee is already an administrator.</exception>
+    public void UpdateDailyWorkHours(decimal newDailyWorkHours)
+    {
+        if (newDailyWorkHours <= 0 || newDailyWorkHours > 24)
+            throw new DomainException("Daily work hours must be greater than 0 and no more than 24.");
+
+        DailyWorkHours = newDailyWorkHours;
     }
 
     /// <summary>

@@ -78,7 +78,8 @@ public sealed class DatabaseSeeder
             passwordHash: passwordHash,
             fullName: "System Administrator",
             role: Role.Admin,
-            createdAt: now);
+            createdAt: now,
+            dailyWorkHours: 8m);
 
         await _context.Employees.AddAsync(admin, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
@@ -123,7 +124,8 @@ public sealed class DatabaseSeeder
             passwordHash: passwordHash,
             fullName: "lizi feld",
             role: Role.Employee,
-            createdAt: now);
+            createdAt: now,
+            dailyWorkHours: 8m);
 
         await _context.Employees.AddAsync(user, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);

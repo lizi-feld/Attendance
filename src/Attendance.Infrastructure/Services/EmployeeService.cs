@@ -50,7 +50,7 @@ public sealed class EmployeeService : IEmployeeService
 
         var now = await _timeProvider.GetCurrentTimeAsync(cancellationToken);
         var passwordHash = _passwordHashingService.HashPassword(command.Password);
-        var employee = Employee.Create(normalizedUsername, passwordHash, command.FullName, command.Role, now);
+        var employee = Employee.Create(normalizedUsername, passwordHash, command.FullName, command.Role, now, command.DailyWorkHours);
         var created = await _employeeRepository.AddAsync(employee, cancellationToken);
 
         return MapToDto(created);
@@ -83,6 +83,9 @@ public sealed class EmployeeService : IEmployeeService
 
         if (command.Password is not null)
             employee.UpdatePasswordHash(_passwordHashingService.HashPassword(command.Password));
+
+        if (command.DailyWorkHours is not null)
+            employee.UpdateDailyWorkHours(command.DailyWorkHours.Value);
 
         await _employeeRepository.UpdateAsync(employee, cancellationToken);
 
@@ -120,6 +123,7 @@ public sealed class EmployeeService : IEmployeeService
         Id = employee.Id,
         Username = employee.Username,
         FullName = employee.FullName,
+        DailyWorkHours = employee.DailyWorkHours,
         Role = employee.Role.ToString(),
         CreatedAt = employee.CreatedAt,
         AttendanceRecords = employee.AttendanceRecords?.Count > 0
@@ -135,6 +139,7 @@ public sealed class EmployeeService : IEmployeeService
         Id = employee.Id,
         Username = employee.Username,
         FullName = employee.FullName,
+        DailyWorkHours = employee.DailyWorkHours,
         Role = employee.Role.ToString(),
         CreatedAt = employee.CreatedAt,
         AttendanceRecords = employee.AttendanceRecords

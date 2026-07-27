@@ -15,6 +15,9 @@ public sealed record EmployeeDetailsDto
     /// <summary>Gets the employee's display name.</summary>
     public string FullName { get; init; } = string.Empty;
 
+    /// <summary>Gets the employee's target daily work-hours quota.</summary>
+    public decimal DailyWorkHours { get; init; }
+
     /// <summary>Gets the employee's role as a human-readable string (e.g., <c>"Admin"</c>, <c>"Employee"</c>).</summary>
     public string Role { get; init; } = string.Empty;
 

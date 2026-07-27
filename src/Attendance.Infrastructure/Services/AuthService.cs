@@ -234,6 +234,7 @@ public sealed class AuthService : IAuthService
         Id = employee.Id,
         Username = employee.Username,
         FullName = employee.FullName,
+        DailyWorkHours = employee.DailyWorkHours,
         Role = employee.Role.ToString(),
         CreatedAt = employee.CreatedAt
     };

@@ -34,6 +34,10 @@ public sealed class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
             .IsRequired()
             .HasMaxLength(200);
 
+        builder.Property(e => e.DailyWorkHours)
+            .IsRequired()
+            .HasColumnType("decimal(5,2)");
+
         // Stored as int — enum numeric values (Employee=1, Admin=2) are stable by design.
         builder.Property(e => e.Role)
             .IsRequired()

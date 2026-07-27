@@ -162,6 +162,7 @@ public sealed class AuthController : ControllerBase
             FullName = request.FullName,
             Username = request.Username,
             Password = request.Password,
+            DailyWorkHours = request.DailyWorkHours,
             Role     = request.Role
         };
 
@@ -216,7 +217,8 @@ public sealed class AuthController : ControllerBase
             Id       = id,
             FullName = request.FullName,
             Username = request.Username,
-            Password = request.Password
+            Password = request.Password,
+            DailyWorkHours = request.DailyWorkHours
         };
 
         var employee = await _employeeService.UpdateAsync(command, cancellationToken);

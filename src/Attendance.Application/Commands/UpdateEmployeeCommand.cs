@@ -21,4 +21,7 @@ public sealed record UpdateEmployeeCommand
     /// The service layer hashes this before storage; it must never be persisted or logged.
     /// </summary>
     public string? Password { get; init; }
+
+    /// <summary>Gets the new target daily work-hours quota, or <c>null</c> to leave unchanged.</summary>
+    public decimal? DailyWorkHours { get; init; }
 }

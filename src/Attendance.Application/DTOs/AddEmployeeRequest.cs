@@ -16,6 +16,9 @@ public sealed record AddEmployeeRequest
     /// <summary>Gets the plaintext password (transmitted over HTTPS, never stored).</summary>
     public string Password { get; init; } = string.Empty;
 
+    /// <summary>Gets the employee's target daily work-hours quota.</summary>
+    public decimal DailyWorkHours { get; init; }
+
     /// <summary>Gets the access role to assign. Defaults to <see cref="Role.Employee"/>.</summary>
     public Role Role { get; init; } = Role.Employee;
 }

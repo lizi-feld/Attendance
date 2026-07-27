@@ -14,4 +14,7 @@ public sealed record UpdateEmployeeRequest
 
     /// <summary>Gets the new plaintext password, or <c>null</c> to leave unchanged.</summary>
     public string? Password { get; init; }
+
+    /// <summary>Gets the new target daily work-hours quota, or <c>null</c> to leave unchanged.</summary>
+    public decimal? DailyWorkHours { get; init; }
 }

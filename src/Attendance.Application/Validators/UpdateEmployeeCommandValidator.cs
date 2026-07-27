@@ -42,5 +42,12 @@ public sealed class UpdateEmployeeCommandValidator : AbstractValidator<UpdateEmp
                 .Matches(@"[0-9]").WithMessage("Password must contain at least one digit.")
                 .Matches(@"[\W_]").WithMessage("Password must contain at least one special character.");
         });
+
+        When(x => x.DailyWorkHours is not null, () =>
+        {
+            RuleFor(x => x.DailyWorkHours!)
+                .GreaterThan(0).WithMessage("Daily work hours must be greater than 0.")
+                .LessThanOrEqualTo(24).WithMessage("Daily work hours cannot exceed 24.");
+        });
     }
 }

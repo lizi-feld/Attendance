@@ -20,6 +20,9 @@ public sealed record CreateEmployeeCommand
     /// <summary>Gets the employee's display name (max 200 chars).</summary>
     public string FullName { get; init; } = string.Empty;
 
+    /// <summary>Gets the employee's target daily work-hours quota.</summary>
+    public decimal DailyWorkHours { get; init; }
+
     /// <summary>Gets the access role to assign to the new employee.</summary>
     public Role Role { get; init; }
 }

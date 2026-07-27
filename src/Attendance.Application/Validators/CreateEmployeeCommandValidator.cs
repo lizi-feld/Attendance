@@ -30,6 +30,10 @@ public sealed class CreateEmployeeCommandValidator : AbstractValidator<CreateEmp
             .NotEmpty().WithMessage("Full name is required.")
             .MaximumLength(200).WithMessage("Full name cannot exceed 200 characters.");
 
+        RuleFor(x => x.DailyWorkHours)
+            .GreaterThan(0).WithMessage("Daily work hours must be greater than 0.")
+            .LessThanOrEqualTo(24).WithMessage("Daily work hours cannot exceed 24.");
+
         RuleFor(x => x.Role)
             .IsInEnum().WithMessage("Role must be a valid system role (Employee or Admin).");
     }

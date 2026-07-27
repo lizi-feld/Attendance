@@ -24,7 +24,7 @@ public sealed class AttendanceRecordConfiguration : IEntityTypeConfiguration<Att
         builder.Property(a => a.EmployeeId)
             .IsRequired();
 
-        // All timestamps store Europe/Zurich time as sourced from the external time provider.
+        // All timestamps store Asia/Jerusalem time as sourced from the external time provider.
         builder.Property(a => a.ClockInTime)
             .IsRequired()
             .HasColumnType("datetime2");

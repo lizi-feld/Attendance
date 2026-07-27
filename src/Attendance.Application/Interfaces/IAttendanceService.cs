@@ -6,7 +6,7 @@ namespace Attendance.Application.Interfaces;
 /// Defines the business operations for managing employee attendance.
 /// <para>
 /// All clock-in/out timestamps are fetched exclusively from
-/// <see cref="ITimeProvider"/> (Europe/Zurich). Local machine time is never used.
+/// <see cref="ITimeProvider"/> (Asia/Jerusalem). Local machine time is never used.
 /// </para>
 /// </summary>
 public interface IAttendanceService
@@ -119,7 +119,7 @@ public interface IAttendanceService
 
     /// <summary>
     /// Generates a real-time dashboard summary including active sessions and today's statistics.
-    /// The current date is determined via the external time provider (Europe/Zurich).
+    /// The current date is determined via the external time provider (Asia/Jerusalem).
     /// </summary>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
     /// <returns>A <see cref="DashboardSummaryDto"/> snapshot of the current attendance state.</returns>

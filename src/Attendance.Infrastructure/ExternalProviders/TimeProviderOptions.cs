@@ -8,7 +8,7 @@ namespace Attendance.Infrastructure.ExternalProviders;
 /// <code>
 /// "TimeProvider": {
 ///   "BaseUrl": "https://timeapi.io/",
-///   "TimeZone": "Europe/Zurich",
+///   "TimeZone": "Asia/Jerusalem",
 ///   "MaxRetryAttempts": 3,
 ///   "RetryDelaySeconds": 1,
 ///   "TimeoutSeconds": 10
@@ -24,7 +24,7 @@ public sealed class TimeProviderOptions
     public string BaseUrl { get; init; } = "https://timeapi.io/";
 
     /// <summary>Gets the IANA timezone identifier to request (must match TimeAPI.io's accepted values).</summary>
-    public string TimeZone { get; init; } = "Europe/Zurich";
+    public string TimeZone { get; init; } = "Asia/Jerusalem";
 
     /// <summary>Gets the maximum number of retry attempts on transient HTTP failure.</summary>
     public int MaxRetryAttempts { get; init; } = 3;

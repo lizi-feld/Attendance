@@ -33,7 +33,7 @@ public sealed class AttendanceController : ControllerBase
 
     /// <summary>
     /// Records a clock-in event for the authenticated employee.
-    /// The timestamp is sourced from the external time provider (Europe/Zurich).
+    /// The timestamp is sourced from the external time provider (Asia/Jerusalem).
     /// </summary>
     /// <param name="cancellationToken">Request cancellation token.</param>
     /// <returns>The newly created attendance record.</returns>
@@ -61,7 +61,7 @@ public sealed class AttendanceController : ControllerBase
 
     /// <summary>
     /// Records a clock-out event for the authenticated employee's active session.
-    /// The timestamp is sourced from the external time provider (Europe/Zurich).
+    /// The timestamp is sourced from the external time provider (Asia/Jerusalem).
     /// </summary>
     /// <param name="cancellationToken">Request cancellation token.</param>
     /// <returns>The updated attendance record with clock-out time and duration.</returns>

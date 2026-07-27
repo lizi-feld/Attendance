@@ -4,7 +4,7 @@ namespace Attendance.Domain.Entities;
 
 /// <summary>
 /// Represents a single attendance session (clock-in to clock-out) for an employee.
-/// All timestamps are sourced from the external time provider (Europe/Zurich timezone).
+/// All timestamps are sourced from the external time provider (Asia/Jerusalem timezone).
 /// </summary>
 public sealed class AttendanceRecord
 {
@@ -19,7 +19,7 @@ public sealed class AttendanceRecord
 
     /// <summary>
     /// Gets the timestamp when the employee clocked in.
-    /// Sourced from the external time provider (Europe/Zurich).
+    /// Sourced from the external time provider (Asia/Jerusalem).
     /// </summary>
     public DateTime ClockInTime { get; private set; }
 

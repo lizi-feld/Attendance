@@ -31,7 +31,7 @@ public sealed class ExternalTimeProviderHealthCheck : IHealthCheck
             var currentTime = await _timeProvider.GetCurrentTimeAsync(cancellationToken);
 
             return HealthCheckResult.Healthy(
-                $"External time provider is reachable. Current time: {currentTime:yyyy-MM-dd HH:mm:ss} (Europe/Zurich)");
+                $"External time provider is reachable. Current time: {currentTime:yyyy-MM-dd HH:mm:ss} (Asia/Jerusalem)");
         }
         catch (TimeProviderException ex)
         {

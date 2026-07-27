@@ -76,7 +76,7 @@ public sealed class AttendanceRepository : IAttendanceRepository
     /// Uses a half-open date range <c>[startOfDay, startOfNextDay)</c> against <see cref="AttendanceRecord.ClockInTime"/>
     /// so the query utilises <c>IX_AttendanceRecords_ClockInTime</c> efficiently without
     /// per-row date-part extraction functions.
-    /// The date values must be in Europe/Zurich time to match the stored clock-in timestamps.
+    /// The date values must be in Asia/Jerusalem time to match the stored clock-in timestamps.
     /// </remarks>
     public async Task<IReadOnlyList<AttendanceRecord>> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default)
     {

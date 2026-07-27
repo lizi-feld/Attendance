@@ -24,16 +24,16 @@ public sealed class RefreshToken
     public int EmployeeId { get; private set; }
 
     /// <summary>
-    /// Gets the Europe/Zurich timestamp at which this token expires.
+    /// Gets the Asia/Jerusalem timestamp at which this token expires.
     /// Sourced from <c>ITimeProvider</c> at creation time.
     /// </summary>
     public DateTime ExpiresAt { get; private set; }
 
-    /// <summary>Gets the Europe/Zurich timestamp when this token was issued.</summary>
+    /// <summary>Gets the Asia/Jerusalem timestamp when this token was issued.</summary>
     public DateTime CreatedAt { get; private set; }
 
     /// <summary>
-    /// Gets the Europe/Zurich timestamp when this token was revoked,
+    /// Gets the Asia/Jerusalem timestamp when this token was revoked,
     /// or <c>null</c> if it has not been revoked.
     /// </summary>
     public DateTime? RevokedAt { get; private set; }
@@ -48,7 +48,7 @@ public sealed class RefreshToken
     /// Determines whether this token is still usable at the given point in time.
     /// A token is active when it is neither revoked nor past its expiry.
     /// </summary>
-    /// <param name="now">The current time from <c>ITimeProvider</c> (Europe/Zurich).</param>
+    /// <param name="now">The current time from <c>ITimeProvider</c> (Asia/Jerusalem).</param>
     public bool IsActiveAt(DateTime now) => !IsRevoked && now < ExpiresAt;
 
     /// <summary>

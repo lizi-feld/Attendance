@@ -10,7 +10,7 @@ using Polly.Retry;
 namespace Attendance.Infrastructure.ExternalProviders;
 
 /// <summary>
-/// Retrieves the current Europe/Zurich time from the TimeAPI.io external service.
+/// Retrieves the current Asia/Jerusalem time from the TimeAPI.io external service.
 /// Registered as a typed <see cref="HttpClient"/> — the base address is configured during DI setup.
 /// </summary>
 /// <remarks>
@@ -69,15 +69,15 @@ public sealed class ExternalTimeProvider : ITimeProvider
 
         try
         {
-            var zurichTime = await _retryPipeline.ExecuteAsync(
+            var israelTime = await _retryPipeline.ExecuteAsync(
                 async ct => await FetchTimeFromApiAsync(ct),
                 cancellationToken);
 
             _logger.LogDebug(
-                "External time provider returned {ZurichTime} for TimeZone={TimeZone}",
-                zurichTime, _options.TimeZone);
+                "External time provider returned {israelTime} for TimeZone={TimeZone}",
+                israelTime, _options.TimeZone);
 
-            return zurichTime;
+            return israelTime;
         }
         catch (TimeProviderException)
         {
@@ -128,8 +128,8 @@ public sealed class ExternalTimeProvider : ITimeProvider
             throw new InvalidOperationException(
                 $"Could not parse the 'dateTime' value returned by TimeAPI.io: '{apiResponse.DateTime}'.");
         }
-
-        return parsed;
+        // api time israel returns a wrong time - gap 13 m
+        return parsed.AddMinutes(13);
     }
 
     private ResiliencePipeline<DateTime> BuildRetryPipeline()

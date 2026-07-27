@@ -2,7 +2,7 @@ namespace Attendance.Application.DTOs;
 
 /// <summary>
 /// Aggregated real-time attendance metrics for the administrator dashboard.
-/// All time values reflect Europe/Zurich time as sourced from the external time provider.
+/// All time values reflect Asia/Jerusalem time as sourced from the external time provider.
 /// </summary>
 public sealed record DashboardSummaryDto
 {
@@ -19,7 +19,7 @@ public sealed record DashboardSummaryDto
     public IReadOnlyList<AttendanceRecordDto> ActiveSessions { get; init; } = [];
 
     /// <summary>
-    /// Gets the Europe/Zurich timestamp at which this summary snapshot was generated.
+    /// Gets the Asia/Jerusalem timestamp at which this summary snapshot was generated.
     /// </summary>
     public DateTime GeneratedAt { get; init; }
 }

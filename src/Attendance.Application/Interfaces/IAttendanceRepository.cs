@@ -44,7 +44,7 @@ public interface IAttendanceRepository
 
     /// <summary>
     /// Retrieves all attendance records whose clock-in date matches the given date.
-    /// The date comparison must account for the Europe/Zurich timezone stored in <c>ClockInTime</c>.
+    /// The date comparison must account for the Asia/Jerusalem timezone stored in <c>ClockInTime</c>.
     /// </summary>
     /// <param name="date">The calendar date to filter by.</param>
     /// <param name="cancellationToken">Token to cancel the database query.</param>
@@ -53,12 +53,12 @@ public interface IAttendanceRepository
 
     /// <summary>
     /// Retrieves all attendance records for an employee whose clock-in falls within a half-open
-    /// date/time range <c>[from, to)</c>. Both bounds are in Europe/Zurich time.
+    /// date/time range <c>[from, to)</c>. Both bounds are in Asia/Jerusalem time.
     /// Used for weekly and monthly hour calculations.
     /// </summary>
     /// <param name="employeeId">The employee's primary key.</param>
-    /// <param name="from">Inclusive lower bound (Europe/Zurich time).</param>
-    /// <param name="to">Exclusive upper bound (Europe/Zurich time).</param>
+    /// <param name="from">Inclusive lower bound (Asia/Jerusalem time).</param>
+    /// <param name="to">Exclusive upper bound (Asia/Jerusalem time).</param>
     /// <param name="cancellationToken">Token to cancel the database query.</param>
     /// <returns>A read-only list of <see cref="AttendanceRecord"/> entries in the range.</returns>
     Task<IReadOnlyList<AttendanceRecord>> GetByDateRangeAsync(

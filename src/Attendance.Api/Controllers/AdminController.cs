@@ -46,7 +46,7 @@ public sealed class AdminController : ControllerBase
     [SwaggerOperation(
         Summary = "Get dashboard summary",
         Description = "Returns live attendance metrics: total employees, active sessions, and today's record count. " +
-                      "Timestamps are in Europe/Zurich time sourced from the external time provider.")]
+                      "Timestamps are in Asia/Jerusalem time sourced from the external time provider.")]
     [SwaggerResponse(StatusCodes.Status200OK,           "Dashboard data retrieved.",        typeof(DashboardSummaryDto))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Not authenticated.",               typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status403Forbidden,    "Admin role required.",             typeof(ProblemDetails))]

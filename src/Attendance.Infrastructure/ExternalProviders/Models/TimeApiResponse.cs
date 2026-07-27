@@ -18,7 +18,7 @@ internal sealed record TimeApiResponse
 
     /// <summary>
     /// The IANA timezone identifier echoed back by the API
-    /// (e.g., <c>"Europe/Zurich"</c>). Used for defensive validation.
+    /// (e.g., <c>"Asia/Jerusalem"</c>). Used for defensive validation.
     /// </summary>
     [JsonPropertyName("timeZone")]
     public string TimeZone { get; init; } = string.Empty;

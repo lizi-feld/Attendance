@@ -25,7 +25,7 @@ public static class SwaggerServiceExtensions
                 Description =
                     "RESTful API for the Time Attendance System.\n\n" +
                     "All attendance timestamps originate from an external time provider " +
-                    "(Europe/Zurich timezone). Local server time is never used for attendance records.\n\n" +
+                    "(Asia/Jerusalem timezone). Local server time is never used for attendance records.\n\n" +
                     "**Authentication:** use `POST /api/auth/login` to obtain a Bearer token, " +
                     "then click **Authorize** and enter `Bearer {token}`.",
                 Contact = new OpenApiContact

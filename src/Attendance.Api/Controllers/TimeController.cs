@@ -40,7 +40,7 @@ public sealed class TimeController : ControllerBase
     /// </summary>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("current")]
-    [SwaggerOperation(Summary = "Get current time", Description = "Retrieves the current Europe/Zurich time from the configured external provider.")]
+    [SwaggerOperation(Summary = "Get current time", Description = "Retrieves the current Asia/Jerusalem time from the configured external provider.")]
     [SwaggerResponse(StatusCodes.Status200OK, "Current time retrieved.")]
     [SwaggerResponse(StatusCodes.Status503ServiceUnavailable, "External time provider unavailable.")]
     public async Task<IActionResult> GetCurrentTime(CancellationToken cancellationToken)

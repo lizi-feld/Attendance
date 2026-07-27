@@ -2,7 +2,7 @@ namespace Attendance.Application.DTOs;
 
 /// <summary>
 /// Represents a single attendance session for API consumption.
-/// All timestamps reflect Europe/Zurich time as sourced from the external time provider.
+/// All timestamps reflect Asia/Jerusalem time as sourced from the external time provider.
 /// </summary>
 public sealed record AttendanceRecordDto
 {
@@ -15,11 +15,11 @@ public sealed record AttendanceRecordDto
     /// <summary>Gets the associated employee's full display name.</summary>
     public string EmployeeFullName { get; init; } = string.Empty;
 
-    /// <summary>Gets the clock-in timestamp (Europe/Zurich time).</summary>
+    /// <summary>Gets the clock-in timestamp (Asia/Jerusalem time).</summary>
     public DateTime ClockInTime { get; init; }
 
     /// <summary>
-    /// Gets the clock-out timestamp (Europe/Zurich time),
+    /// Gets the clock-out timestamp (Asia/Jerusalem time),
     /// or <c>null</c> when the session is still active.
     /// </summary>
     public DateTime? ClockOutTime { get; init; }

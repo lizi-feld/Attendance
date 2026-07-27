@@ -45,7 +45,7 @@ public sealed class Employee
     /// <param name="passwordHash">Pre-computed bcrypt hash of the password.</param>
     /// <param name="fullName">Display name (max 200 chars).</param>
     /// <param name="role">The access role to assign.</param>
-    /// <param name="createdAt">Timestamp from the external time provider (Europe/Zurich).</param>
+    /// <param name="createdAt">Timestamp from the external time provider (Asia/Jerusalem).</param>
     /// <returns>A valid, unsaved <see cref="Employee"/> entity.</returns>
     /// <exception cref="ArgumentException">Thrown when any string argument is null or whitespace.</exception>
     /// <exception cref="DomainException">Thrown when a business constraint is violated.</exception>

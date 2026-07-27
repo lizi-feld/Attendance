@@ -16,7 +16,7 @@ public sealed record CurrentAttendanceStatusDto
     public int? ActiveRecordId { get; init; }
 
     /// <summary>
-    /// Gets the Europe/Zurich timestamp at which the active session started,
+    /// Gets the Asia/Jerusalem timestamp at which the active session started,
     /// or <c>null</c> when the employee is not clocked in.
     /// </summary>
     public DateTime? ClockInTime { get; init; }

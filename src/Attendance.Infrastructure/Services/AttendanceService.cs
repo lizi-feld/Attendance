@@ -195,7 +195,7 @@ public sealed class AttendanceService : IAttendanceService
             var date = firstDay.AddDays(day - 1);
             var record = recordLookup.TryGetValue(date, out var matchedRecord) ? matchedRecord : null;
             var dayOfWeek = date.DayOfWeek.ToString();
-            var isWeekend = date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+            var isWeekend = date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Friday;
             var isFutureDate = date > today;
             var isDisabled = isWeekend || isFutureDate || monthClosed;
             var isEditable = !isDisabled && !monthClosed;

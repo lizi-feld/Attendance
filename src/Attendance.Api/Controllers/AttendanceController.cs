@@ -354,7 +354,7 @@ public sealed class AttendanceController : ControllerBase
     [Consumes("application/json")]
     [SwaggerOperation(
         Summary = "Report absence",
-        Description = "Creates a new absence report. A DocumentUrl is required for SickLeave, ChildSickLeave, and Other.")]
+        Description = "Creates a new absence report. A DocumentUrl is required for SickLeave, ChildSickLeave, Other, and Pregnancy.")]
     [SwaggerResponse(StatusCodes.Status201Created,      "Absence reported successfully.",                       typeof(AbsenceRecordDto))]
     [SwaggerResponse(StatusCodes.Status400BadRequest,   "Validation failed (e.g. missing required document).", typeof(ProblemDetails))]
     [SwaggerResponse(StatusCodes.Status401Unauthorized, "Not authenticated.",                                   typeof(ProblemDetails))]

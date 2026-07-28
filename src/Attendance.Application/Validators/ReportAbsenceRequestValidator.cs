@@ -8,10 +8,10 @@ namespace Attendance.Application.Validators;
 /// Validates <see cref="ReportAbsenceRequestDto"/>.
 /// </summary>
 /// <remarks>
-/// <see cref="AbsenceType.SickLeave"/>, <see cref="AbsenceType.ChildSickLeave"/>, and
-/// <see cref="AbsenceType.Other"/> require a non-empty <c>DocumentUrl</c>.
-/// <see cref="AbsenceType.Holiday"/>, <see cref="AbsenceType.CholHaMoed"/>,
-/// <see cref="AbsenceType.Vacation"/>, and <see cref="AbsenceType.Pregnancy"/> do not.
+/// <see cref="AbsenceType.SickLeave"/>, <see cref="AbsenceType.ChildSickLeave"/>,
+/// <see cref="AbsenceType.Other"/>, and <see cref="AbsenceType.Pregnancy"/> require a
+/// non-empty <c>DocumentUrl</c>. <see cref="AbsenceType.Holiday"/>,
+/// <see cref="AbsenceType.CholHaMoed"/>, and <see cref="AbsenceType.Vacation"/> do not.
 /// </remarks>
 public sealed class ReportAbsenceRequestValidator : AbstractValidator<ReportAbsenceRequestDto>
 {
@@ -19,7 +19,8 @@ public sealed class ReportAbsenceRequestValidator : AbstractValidator<ReportAbse
     [
         AbsenceType.SickLeave,
         AbsenceType.ChildSickLeave,
-        AbsenceType.Other
+        AbsenceType.Other,
+        AbsenceType.Pregnancy
     ];
 
     /// <summary>Initializes the validation rules for <see cref="ReportAbsenceRequestDto"/>.</summary>

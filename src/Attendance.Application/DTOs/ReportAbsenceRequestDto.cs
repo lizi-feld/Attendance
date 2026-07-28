@@ -17,7 +17,8 @@ public sealed record ReportAbsenceRequestDto
     /// Gets the URL/path of a previously uploaded supporting document
     /// (see <c>POST /api/attendance/upload-document</c>).
     /// Required when <see cref="AbsenceType"/> is <see cref="Domain.Enums.AbsenceType.SickLeave"/>,
-    /// <see cref="Domain.Enums.AbsenceType.ChildSickLeave"/>, or <see cref="Domain.Enums.AbsenceType.Other"/>.
+    /// <see cref="Domain.Enums.AbsenceType.ChildSickLeave"/>, <see cref="Domain.Enums.AbsenceType.Other"/>,
+    /// or <see cref="Domain.Enums.AbsenceType.Pregnancy"/>.
     /// </summary>
     public string? DocumentUrl { get; init; }
 

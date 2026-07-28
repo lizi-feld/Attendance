@@ -45,7 +45,7 @@ public sealed class AbsenceRecord
     /// (e.g. a doctor's note) to be attached.
     /// </summary>
     public static bool RequiresDocument(AbsenceType type) =>
-        type is AbsenceType.SickLeave or AbsenceType.ChildSickLeave or AbsenceType.Other;
+        type is AbsenceType.SickLeave or AbsenceType.ChildSickLeave or AbsenceType.Other or AbsenceType.Pregnancy;
 
     /// <summary>
     /// Factory method that creates and validates a new <see cref="AbsenceRecord"/> instance.

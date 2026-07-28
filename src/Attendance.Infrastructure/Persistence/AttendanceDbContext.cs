@@ -32,6 +32,9 @@ public sealed class AttendanceDbContext : DbContext
     /// <summary>Gets the <see cref="AbsenceRecord"/> table set.</summary>
     public DbSet<AbsenceRecord> AbsenceRecords => Set<AbsenceRecord>();
 
+    /// <summary>Gets the <see cref="HolidayRecord"/> table set.</summary>
+    public DbSet<HolidayRecord> HolidayRecords => Set<HolidayRecord>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

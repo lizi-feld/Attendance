@@ -63,6 +63,7 @@ public sealed class GlobalExceptionHandlingMiddleware
             ActiveShiftNotFoundException      => (StatusCodes.Status409Conflict,              "No Active Shift"),
             ActiveShiftAlreadyExistsException => (StatusCodes.Status409Conflict,              "Shift Already Active"),
             TimeProviderException             => (StatusCodes.Status500InternalServerError,   "Time Service Unavailable"),
+            HebcalApiException                => (StatusCodes.Status500InternalServerError,   "Holiday Service Unavailable"),
             _                                 => (StatusCodes.Status500InternalServerError,   "An unexpected error occurred")
         };
 

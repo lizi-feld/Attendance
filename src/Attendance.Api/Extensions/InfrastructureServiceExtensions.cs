@@ -34,6 +34,7 @@ public static class InfrastructureServiceExtensions
         RegisterRepositories(services);
         RegisterBusinessServices(services);
         RegisterTimeProvider(services, configuration);
+        RegisterHebcalClient(services, configuration);
         RegisterHealthChecks(services);
 
         services.AddTransient<DatabaseSeeder>();
@@ -80,6 +81,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAbsenceRepository, AbsenceRepository>();
+        services.AddScoped<IHolidayRepository, HolidayRepository>();
     }
 
     // ── Business services ─────────────────────────────────────────────────────
@@ -91,6 +93,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IAbsenceService, AbsenceService>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped<IHolidayService, HolidayService>();
     }
 
     // ── External Time Provider ────────────────────────────────────────────────
@@ -135,6 +138,30 @@ public static class InfrastructureServiceExtensions
         // Resolve ITimeProvider by forwarding to the typed-client-managed ExternalTimeProvider.
         services.AddTransient<ITimeProvider>(
             sp => sp.GetRequiredService<ExternalTimeProvider>());
+    }
+
+    // ── Hebcal Client ─────────────────────────────────────────────────────────
+
+    private static void RegisterHebcalClient(IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<HebcalOptions>(configuration.GetSection(HebcalOptions.SectionName));
+
+        services.AddHttpClient<HebcalApiClient>((sp, client) =>
+        {
+            var opts = sp.GetRequiredService<IOptions<HebcalOptions>>().Value;
+            client.BaseAddress = new Uri(opts.BaseUrl);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        })
+        .AddStandardResilienceHandler(resilience =>
+        {
+            resilience.Retry.MaxRetryAttempts = 2;
+            resilience.Retry.BackoffType = DelayBackoffType.Exponential;
+            resilience.Retry.UseJitter = true;
+            resilience.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
+            resilience.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+        });
+
+        services.AddTransient<IHebcalClient>(sp => sp.GetRequiredService<HebcalApiClient>());
     }
 
     // ── Health Checks ─────────────────────────────────────────────────────────

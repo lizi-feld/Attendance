@@ -22,6 +22,45 @@ namespace Attendance.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Attendance.Domain.Entities.AbsenceRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("DocumentUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId")
+                        .HasDatabaseName("IX_AbsenceRecords_EmployeeId");
+
+                    b.HasIndex("EmployeeId", "Date")
+                        .HasDatabaseName("IX_AbsenceRecords_EmployeeId_Date");
+
+                    b.ToTable("AbsenceRecords", (string)null);
+                });
+
             modelBuilder.Entity("Attendance.Domain.Entities.AttendanceRecord", b =>
                 {
                     b.Property<int>("Id")
@@ -136,6 +175,17 @@ namespace Attendance.Infrastructure.Migrations
                         .HasDatabaseName("UX_RefreshTokens_Token");
 
                     b.ToTable("RefreshTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Attendance.Domain.Entities.AbsenceRecord", b =>
+                {
+                    b.HasOne("Attendance.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
                 });
 
             modelBuilder.Entity("Attendance.Domain.Entities.AttendanceRecord", b =>

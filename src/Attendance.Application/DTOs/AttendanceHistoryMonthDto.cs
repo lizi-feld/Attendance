@@ -98,7 +98,7 @@ public sealed class AttendanceHistoryDayDto
     public bool HasAttendanceRecord { get; init; }
 
     /// <summary>
-    /// האם היום הוא סופי שבוע.
+    /// האם היום הוא סוף שבוע.
     /// </summary>
     public bool IsWeekend { get; init; }
 
@@ -181,5 +181,20 @@ public sealed class AttendanceHistoryDayDto
     /// הסבר/הערה לתצוגת היום.
     /// </summary>
     public string? Explanation { get; init; }
+
+    /// <summary>
+    /// סוג ההיעדרות שדווחה עבור יום זה (שם ה-enum, לדוגמה "SickLeave"), או null אם לא דווחה היעדרות.
+    /// </summary>
+    public string? AbsenceType { get; init; }
+
+    /// <summary>
+    /// כתובת/נתיב המסמך התומך שצורף לדיווח ההיעדרות, אם קיים.
+    /// </summary>
+    public string? DocumentUrl { get; init; }
+
+    /// <summary>
+    /// הערה חופשית שצורפה ליום זה — מדיווח היעדרות או מעדכון נוכחות ידני, אם קיימת.
+    /// </summary>
+    public string? Note { get; init; }
 }
 

@@ -25,6 +25,7 @@ namespace Attendance.Infrastructure.Services;
 public sealed class AttendanceService : IAttendanceService
 {
     private readonly IAttendanceRepository _attendanceRepository;
+    private readonly IAbsenceRepository _absenceRepository;
     private readonly IEmployeeRepository _employeeRepository;
     private readonly ITimeProvider _timeProvider;
     private readonly IValidator<ManualTimeUpdateRequestDto> _manualUpdateValidator;
@@ -36,6 +37,7 @@ public sealed class AttendanceService : IAttendanceService
     /// </summary>
     public AttendanceService(
         IAttendanceRepository attendanceRepository,
+        IAbsenceRepository absenceRepository,
         IEmployeeRepository employeeRepository,
         ITimeProvider timeProvider,
         IValidator<ManualTimeUpdateRequestDto> manualUpdateValidator,
@@ -43,6 +45,7 @@ public sealed class AttendanceService : IAttendanceService
         ILogger<AttendanceService> logger)
     {
         _attendanceRepository = attendanceRepository;
+        _absenceRepository = absenceRepository;
         _employeeRepository = employeeRepository;
         _timeProvider = timeProvider;
         _manualUpdateValidator = manualUpdateValidator;
@@ -158,13 +161,16 @@ public sealed class AttendanceService : IAttendanceService
         int month,
         CancellationToken cancellationToken = default)
     {
-        _ = await _employeeRepository.GetByIdAsync(employeeId, cancellationToken)
+        var employee = await _employeeRepository.GetByIdAsync(employeeId, cancellationToken)
             ?? throw new EmployeeNotFoundException(employeeId);
+        var dailyTargetHours = (double)employee.DailyWorkHours;
 
         var monthStart = new DateTime(year, month, 1);
         var monthEnd = monthStart.AddMonths(1);
         var records = await _attendanceRepository.GetByDateRangeAsync(
             employeeId, monthStart, monthEnd, cancellationToken);
+        var absences = await _absenceRepository.GetByEmployeeIdAndDateRangeAsync(
+            employeeId, DateOnly.FromDateTime(monthStart), DateOnly.FromDateTime(monthEnd), cancellationToken);
 
         // Group records by calendar day (DateOnly) and pick the latest record per day.
         // This prevents ToDictionary from throwing when multiple records have the same calendar date.
@@ -172,12 +178,23 @@ public sealed class AttendanceService : IAttendanceService
             .GroupBy(r => DateOnly.FromDateTime(r.ClockInTime))
             .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.ClockInTime).First());
 
+        // Same rationale as recordLookup — guards against more than one absence report per day.
+        var absenceLookup = absences
+            .GroupBy(a => a.Date)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.CreatedAt).First());
+
         var firstDay = new DateOnly(year, month, 1);
         var daysInMonth = DateTime.DaysInMonth(year, month);
         var today = DateOnly.FromDateTime(await _timeProvider.GetCurrentTimeAsync(cancellationToken));
         var monthClosed = false;
 
         static string FormatDuration(TimeSpan? duration) => duration is null ? "00:00" : duration.Value.ToString("hh\\:mm");
+        // Signed HH:MM — "-01:00" (short of target) / "+00:30" (over target).
+        static string FormatSignedDuration(TimeSpan diff)
+        {
+            var sign = diff < TimeSpan.Zero ? "-" : diff > TimeSpan.Zero ? "+" : "";
+            return $"{sign}{diff.Duration():hh\\:mm}";
+        }
         static string ToHebrewDayName(DayOfWeek dayOfWeek) => dayOfWeek switch
         {
             DayOfWeek.Sunday => "יום ראשון",
@@ -194,6 +211,7 @@ public sealed class AttendanceService : IAttendanceService
         {
             var date = firstDay.AddDays(day - 1);
             var record = recordLookup.TryGetValue(date, out var matchedRecord) ? matchedRecord : null;
+            var absence = absenceLookup.TryGetValue(date, out var matchedAbsence) ? matchedAbsence : null;
             var dayOfWeek = date.DayOfWeek.ToString();
             var isWeekend = date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Friday;
             var isFutureDate = date > today;
@@ -201,19 +219,28 @@ public sealed class AttendanceService : IAttendanceService
             var isEditable = !isDisabled && !monthClosed;
             var canClockIn = isEditable && record is null;
             var canClockOut = isEditable && record is not null && record.ClockOutTime is null;
-            var status = record is null
-                ? (isWeekend ? "Weekend" : isFutureDate ? "Future" : "Empty")
-                : (record.ClockOutTime is null ? "Active" : "Completed");
-            var rowType = record is null
-                ? (isWeekend ? "Weekend" : isFutureDate ? "Future" : "Empty")
-                : "Attendance";
-            var hasDeficit = record is not null && record.Duration is not null && record.Duration.Value.TotalHours < 8;
+            var status = absence is not null
+                ? "Absence"
+                : record is null
+                    ? (isWeekend ? "Weekend" : isFutureDate ? "Future" : "Empty")
+                    : (record.ClockOutTime is null ? "Active" : "Completed");
+            var rowType = absence is not null
+                ? "Absence"
+                : record is null
+                    ? (isWeekend ? "Weekend" : isFutureDate ? "Future" : "Empty")
+                    : "Attendance";
+            var gap = record?.Duration is not null
+                ? record.Duration.Value - TimeSpan.FromHours(dailyTargetHours)
+                : (TimeSpan?)null;
+            var hasDeficit = gap is not null && gap.Value < TimeSpan.Zero;
             var alertText = record is null
                 ? (isWeekend ? "אין דרישה לנוכחות בסופ" + "\"" + "ש" : isFutureDate ? "היום עדיין לא התרחש" : null)
-                : hasDeficit ? "פגיעה בשעות העבודה" : null;
-            var explanation = record is null
-                ? (isWeekend ? "יום סופי שבוע" : isFutureDate ? "יום עתידי" : "אין רשומה")
-                : (record.ClockOutTime is null ? "משמרת פעילה" : "משמרת הושלמה");
+                : hasDeficit ? "חוסר" : null;
+            var explanation = absence is not null
+                ? "היעדרות מדווחת"
+                : record is null
+                    ? (isWeekend ? "סוף שבוע" : isFutureDate ? "יום עתידי" : "אין רשומה")
+                    : (record.ClockOutTime is null ? "בעבודה" : "הושלם");
 
             days.Add(new AttendanceHistoryDayDto
             {
@@ -221,7 +248,7 @@ public sealed class AttendanceService : IAttendanceService
                 DayOfWeek = dayOfWeek,
                 DisplayDateLabel = date.ToString("dd/MM/yyyy"),
                 DayLabel = ToHebrewDayName(date.DayOfWeek),
-                DayTypeLabel = isWeekend ? "סופי שבוע" : "רגיל",
+                DayTypeLabel = isWeekend ? "סוף שבוע" : "רגיל",
                 HasAttendanceRecord = record is not null,
                 IsWeekend = isWeekend,
                 IsFutureDate = isFutureDate,
@@ -238,8 +265,11 @@ public sealed class AttendanceService : IAttendanceService
                 HasAlert = !string.IsNullOrWhiteSpace(alertText) || hasDeficit,
                 HasDeficit = hasDeficit,
                 AlertText = alertText,
-                DisplayBalance = record?.Duration is not null ? FormatDuration(record.Duration) : null,
-                Explanation = explanation
+                DisplayBalance = gap is not null ? FormatSignedDuration(gap.Value) : null,
+                Explanation = explanation,
+                AbsenceType = absence?.Type.ToString(),
+                DocumentUrl = absence?.DocumentUrl,
+                Note = absence?.Note ?? record?.Note
             });
         }
 
@@ -247,7 +277,8 @@ public sealed class AttendanceService : IAttendanceService
             .Where(r => r.Duration is not null)
             .Select(r => r.Duration!.Value)
             .Aggregate(TimeSpan.Zero, (sum, next) => sum + next);
-        var notesCount = records.Count(r => !string.IsNullOrWhiteSpace(r.Note));
+        var notesCount = records.Count(r => !string.IsNullOrWhiteSpace(r.Note))
+                        + absences.Count(a => !string.IsNullOrWhiteSpace(a.Note));
 
         return new AttendanceHistoryMonthDto
         {

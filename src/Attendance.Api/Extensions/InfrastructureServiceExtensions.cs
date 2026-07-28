@@ -79,6 +79,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IAbsenceRepository, AbsenceRepository>();
     }
 
     // ── Business services ─────────────────────────────────────────────────────
@@ -88,6 +89,8 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IAttendanceService, AttendanceService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmployeeService, EmployeeService>();
+        services.AddScoped<IAbsenceService, AbsenceService>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
     }
 
     // ── External Time Provider ────────────────────────────────────────────────

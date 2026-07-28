@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using Attendance.Application.Constants;
 using Attendance.Application.DTOs;
 using Attendance.Application.Exceptions;
 using Attendance.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -20,14 +22,22 @@ namespace Attendance.Api.Controllers;
 public sealed class AttendanceController : ControllerBase
 {
     private readonly IAttendanceService _attendanceService;
+    private readonly IAbsenceService _absenceService;
+    private readonly IFileStorageService _fileStorageService;
     private readonly ILogger<AttendanceController> _logger;
 
     /// <summary>
     /// Initializes a new instance of <see cref="AttendanceController"/>.
     /// </summary>
-    public AttendanceController(IAttendanceService attendanceService, ILogger<AttendanceController> logger)
+    public AttendanceController(
+        IAttendanceService attendanceService,
+        IAbsenceService absenceService,
+        IFileStorageService fileStorageService,
+        ILogger<AttendanceController> logger)
     {
         _attendanceService = attendanceService;
+        _absenceService = absenceService;
+        _fileStorageService = fileStorageService;
         _logger = logger;
     }
 
@@ -288,7 +298,138 @@ public sealed class AttendanceController : ControllerBase
         return CreatedAtAction(nameof(GetHistory), result);
     }
 
+    /// <summary>
+    /// Uploads a supporting document (e.g. a doctor's note) for an absence report.
+    /// Accepts PDF, JPG, JPEG, and PNG files up to 10 MB. The returned URL is passed as
+    /// <c>DocumentUrl</c> to <see cref="ReportAbsence"/>.
+    /// </summary>
+    /// <param name="file">The document file to upload.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <returns>The generated URL/path where the file was stored.</returns>
+    [HttpPost("upload-document")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(DocumentUploadPolicy.MaxFileSizeBytes)]
+    [SwaggerOperation(
+        Summary = "Upload absence supporting document",
+        Description = "Saves an uploaded document (PDF/JPG/JPEG/PNG, max 10MB) and returns its generated URL.")]
+    [SwaggerResponse(StatusCodes.Status200OK,           "File uploaded successfully.",                typeof(UploadDocumentResponseDto))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest,   "No file provided or file type not allowed.", typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Not authenticated.",                          typeof(ProblemDetails))]
+    [ProducesResponseType(typeof(UploadDocumentResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails),            StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails),            StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UploadDocument(
+        [FromForm] IFormFile? file,
+        CancellationToken cancellationToken)
+   {
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "No File Provided",
+                Detail = "A file must be attached to the request."
+            });
+        }
+
+        var employeeId = GetCurrentUserId();
+
+        await using var stream = file.OpenReadStream();
+        var url = await _fileStorageService.SaveFileAsync(stream, file.FileName, cancellationToken);
+
+        _logger.LogInformation(
+            "POST /api/attendance/upload-document succeeded. EmployeeId={EmployeeId} FileName={FileName}",
+            employeeId, file.FileName);
+
+        return Ok(new UploadDocumentResponseDto { Url = url, FileName = file.FileName });
+    }
+
+    /// <summary>
+    /// Reports an absence (vacation, sick leave, holiday, etc.) for the authenticated employee.
+    /// </summary>
+    /// <param name="request">Absence date, type, optional supporting document URL, and optional note.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <returns>The newly created absence record.</returns>
+    [HttpPost("report-absence")]
+    [Consumes("application/json")]
+    [SwaggerOperation(
+        Summary = "Report absence",
+        Description = "Creates a new absence report. A DocumentUrl is required for SickLeave, ChildSickLeave, and Other.")]
+    [SwaggerResponse(StatusCodes.Status201Created,      "Absence reported successfully.",                       typeof(AbsenceRecordDto))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest,   "Validation failed (e.g. missing required document).", typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Not authenticated.",                                   typeof(ProblemDetails))]
+    [ProducesResponseType(typeof(AbsenceRecordDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails),   StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails),   StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ReportAbsence(
+        [FromBody] ReportAbsenceRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var employeeId = GetCurrentUserId();
+        var result = await _absenceService.ReportAbsenceAsync(employeeId, request, cancellationToken);
+
+        _logger.LogInformation(
+            "POST /api/attendance/report-absence succeeded. EmployeeId={EmployeeId} AbsenceId={AbsenceId} Type={Type}",
+            employeeId, result.Id, result.AbsenceType);
+
+        return StatusCode(StatusCodes.Status201Created, result);
+    }
+
+    /// <summary>
+    /// Downloads a previously uploaded absence supporting document.
+    /// Employees may only download documents linked to their own absence reports;
+    /// admins may download any document. A document not yet linked to any absence
+    /// report (i.e. uploaded but not yet submitted via <see cref="ReportAbsence"/>)
+    /// is not downloadable by non-admins.
+    /// </summary>
+    /// <param name="fileName">The generated file name from the upload response's URL.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <returns>The file content stream.</returns>
+    [HttpGet("documents/{fileName}")]
+    [SwaggerOperation(
+        Summary = "Download absence supporting document",
+        Description = "Streams a previously uploaded document. Employees may only access documents linked to their own absence reports; admins may access any.")]
+    [SwaggerResponse(StatusCodes.Status200OK,           "File streamed successfully.")]
+    [SwaggerResponse(StatusCodes.Status401Unauthorized, "Not authenticated.",                                  typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status403Forbidden,    "Attempting to access another employee's document.",  typeof(ProblemDetails))]
+    [SwaggerResponse(StatusCodes.Status404NotFound,     "File not found.",                                     typeof(ProblemDetails))]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadDocument(string fileName, CancellationToken cancellationToken)
+    {
+        var employeeId = GetCurrentUserId();
+
+        if (!User.IsInRole("Admin"))
+        {
+            var documentUrl = $"/api/attendance/documents/{fileName}";
+            var owningEmployeeId = await _absenceService.GetOwningEmployeeIdForDocumentAsync(documentUrl, cancellationToken);
+
+            if (owningEmployeeId is null || owningEmployeeId.Value != employeeId)
+                return Forbid();
+        }
+
+        var stream = await _fileStorageService.OpenReadAsync(fileName, cancellationToken);
+        if (stream is null)
+            return NotFound();
+
+        return File(stream, GetContentType(fileName), fileName);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Maps a document file extension to its MIME content type.
+    /// Only ever called with names already validated against <c>DocumentUploadPolicy.AllowedExtensions</c>.
+    /// </summary>
+    private static string GetContentType(string fileName) => Path.GetExtension(fileName).ToLowerInvariant() switch
+    {
+        ".pdf" => "application/pdf",
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".png" => "image/png",
+        _ => "application/octet-stream"
+    };
 
     /// <summary>
     /// Extracts and parses the employee ID from the <c>sub</c> JWT claim

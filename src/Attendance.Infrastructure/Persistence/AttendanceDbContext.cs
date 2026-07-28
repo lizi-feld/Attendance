@@ -29,6 +29,9 @@ public sealed class AttendanceDbContext : DbContext
     /// <summary>Gets the <see cref="RefreshToken"/> table set.</summary>
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    /// <summary>Gets the <see cref="AbsenceRecord"/> table set.</summary>
+    public DbSet<AbsenceRecord> AbsenceRecords => Set<AbsenceRecord>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
